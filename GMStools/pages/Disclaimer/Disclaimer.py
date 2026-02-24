@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QTextBrowser, QPushButton, QMessageBox
+    QTextBrowser, QPushButton, QMessageBox, QSizePolicy
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 
@@ -17,6 +17,7 @@ class Disclaimer(QWidget):
         layout.setSpacing(15)
         layout.setContentsMargins(20, 20, 20, 20)
 
+        # 标题
         title = QLabel("免责声明")
         title.setStyleSheet("""
             font-size: 24px;
@@ -29,6 +30,7 @@ class Disclaimer(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
+        # 免责声明文本区域（可滚动）
         self.disclaimer_text = QTextBrowser()
         self.disclaimer_text.setOpenExternalLinks(True)
         disclaimer_content = """
@@ -76,8 +78,12 @@ class Disclaimer(QWidget):
                 line-height: 1.5;
             }
         """)
-        layout.addWidget(self.disclaimer_text)
 
+        # 让文本区域占满剩余空间
+        self.disclaimer_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        layout.addWidget(self.disclaimer_text, stretch=1)  # stretch=1 使其占据所有额外空间
+
+        # 按钮布局
         self.button_layout = QHBoxLayout()
         self.button_layout.setSpacing(20)
 
@@ -127,7 +133,7 @@ class Disclaimer(QWidget):
         self.button_layout.addStretch()
 
         layout.addLayout(self.button_layout)
-        layout.addStretch()
+        # 注意：不再添加额外的 addStretch()，否则按钮下方会有空白
 
     def on_accept(self):
         self.agreed.emit()
