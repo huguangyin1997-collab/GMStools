@@ -67,7 +67,7 @@ class Concerning(QWidget):
         
         dev_info = QLabel(
             "主程序：GMStools 开发组<br>"
-            "贡献者：Your Name<br>"
+            "贡献者：Huguangyin<br>"
             "特别感谢：所有测试用户"
         )
         dev_info.setTextFormat(Qt.TextFormat.RichText)
@@ -91,9 +91,10 @@ class Concerning(QWidget):
         contact_layout.addWidget(contact_title)
         
         contact_info = QLabel(
-            "邮箱：support@gmstools.com<br>"
-            "官网：https://www.gmstools.com<br>"
-            "问题反馈：请在 GitHub 提交 issue"
+            "邮箱：1737660582@qq.com<br>"
+            "电话：18334185042<br>"
+            "github：https://github.com/huguangyin1997-collab/GMStools.git<br>"
+            "问题反馈：请邮箱或 GitHub "
         )
         contact_info.setTextFormat(Qt.TextFormat.RichText)
         contact_info.setStyleSheet("font-size: 14px; color: #34495e; line-height: 1.6;")
