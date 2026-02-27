@@ -1,0 +1,19 @@
+# Python 编译文件
+*.pyc
+__pycache__/
+
+#打包文件
+*.spec
+build/
+dist/
+
+# 构建产物目录
+release_windows/
+release_linux/
+
+# 压缩包和可执行文件
+*.zip
+*.exe
+*.gitignore
+#新功能文件
+build_all_platforms.py
