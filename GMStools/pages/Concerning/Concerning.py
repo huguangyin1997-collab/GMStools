@@ -12,14 +12,18 @@ from typing import Optional, Dict, Any
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QScrollArea,
-    QPushButton, QHBoxLayout, QMessageBox, QApplication,
-    QTextEdit, QDialog, QVBoxLayout as QVBoxLayoutDlg
+    QPushButton, QHBoxLayout, QApplication,
+    QTextEdit, QDialog, QVBoxLayout as QVBoxLayoutDlg,
+    QDialog, QPushButton, QLabel, QHBoxLayout, QVBoxLayout,
+    QDialogButtonBox, QMessageBox
 )
-from PyQt6.QtCore import Qt, QUrl, QStandardPaths, QTimer
+from PyQt6.QtCore import Qt, QUrl, QStandardPaths, QTimer, QPoint
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor, QMouseEvent
+from CustomTitle.titleWindowControlButtons import WindowControlButtons
 
 # ==================== 当前程序版本 ====================
-APP_VERSION = "1.2.3"
+APP_VERSION = "1.2.9"
 
 # GitHub API 地址（最新 Release）
 GITHUB_API_URL = "https://api.github.com/repos/huguangyin1997-collab/GMStools/releases/latest"
@@ -40,6 +44,194 @@ def compare_versions(v1: str, v2: str) -> int:
         if n1 != n2:
             return n1 - n2
     return 0
+
+
+class MikuDialog(QDialog):
+    def __init__(self, parent=None, title="提示", message="", buttons=QMessageBox.StandardButton.Ok):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
+        self.setModal(True)
+        self.setMinimumSize(400, 200)
+
+        # 加载背景图片
+        img_path = self.get_resource_path("Miku.jpg")
+        self.bg_pixmap = QPixmap(img_path)
+        if self.bg_pixmap.isNull():
+            self.bg_pixmap = QPixmap(400, 200)
+            self.bg_pixmap.fill(Qt.GlobalColor.darkCyan)
+
+        self.update_background()
+        self.setup_ui(title, message, buttons)
+        self.drag_position = None
+
+    def get_resource_path(self, relative_path: str) -> str:
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.join(base, relative_path)
+
+    def update_background(self):
+        if not hasattr(self, 'bg_pixmap') or self.bg_pixmap.isNull():
+            return
+        scaled = self.bg_pixmap.scaled(
+            self.size(),
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            Qt.TransformationMode.SmoothTransformation
+        )
+        if scaled.width() > self.width() or scaled.height() > self.height():
+            x = (scaled.width() - self.width()) // 2
+            y = (scaled.height() - self.height()) // 2
+            scaled = scaled.copy(x, y, self.width(), self.height())
+        palette = self.palette()
+        palette.setBrush(QPalette.ColorRole.Window, QBrush(scaled))
+        self.setPalette(palette)
+        self.setAutoFillBackground(True)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_background()
+
+    def setup_ui(self, title, message, buttons):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # 标题栏（透明）
+        self.title_bar = QWidget()
+        self.title_bar.setFixedHeight(44)
+        self.title_bar.setStyleSheet("background-color: transparent;")
+        title_layout = QHBoxLayout(self.title_bar)
+        title_layout.setContentsMargins(12, 0, 12, 0)
+        title_layout.setSpacing(0)
+
+        title_label = QLabel(title)
+        title_label.setStyleSheet("""
+            QLabel {
+                background-color: transparent;
+                color: #000000;
+                font-size: 18px;
+                font-weight: 900;
+                font-family: "Microsoft YaHei", "Segoe UI";
+                padding: 0 6px;
+            }
+        """)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        title_layout.addWidget(title_label)
+        title_layout.addStretch()
+
+        self.control_buttons = WindowControlButtons()
+        self.control_buttons.minimize_signal.connect(self.showMinimized)
+        self.control_buttons.maximize_signal.connect(self.toggle_maximize)
+        self.control_buttons.close_signal.connect(self.reject)
+        title_layout.addWidget(self.control_buttons)
+        main_layout.addWidget(self.title_bar)
+
+        # 内容区域
+        content_widget = QWidget()
+        content_widget.setStyleSheet("background-color: transparent;")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(20, 20, 20, 20)
+        content_layout.setSpacing(20)
+
+        # 消息标签
+        self.label = QLabel(message)
+        self.label.setWordWrap(True)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setStyleSheet("""
+            QLabel {
+                color: black;
+                font-weight: bold;
+                background-color: rgba(255, 255, 255, 0.8);
+                padding: 15px;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+        """)
+        content_layout.addWidget(self.label)
+
+        # 按钮区域
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        # 创建按钮并设置唯一对象名
+        if buttons & QMessageBox.StandardButton.Ok:
+            btn = QPushButton("确定")
+            btn.setObjectName("okBtn")
+            btn.clicked.connect(lambda: self.done(QMessageBox.StandardButton.Ok))
+            self._apply_button_style(btn)
+            button_layout.addWidget(btn)
+
+        if buttons & QMessageBox.StandardButton.Yes:
+            btn = QPushButton("是")
+            btn.setObjectName("yesBtn")
+            btn.clicked.connect(lambda: self.done(QMessageBox.StandardButton.Yes))
+            self._apply_button_style(btn)
+            button_layout.addWidget(btn)
+
+        if buttons & QMessageBox.StandardButton.No:
+            btn = QPushButton("否")
+            btn.setObjectName("noBtn")
+            btn.clicked.connect(lambda: self.done(QMessageBox.StandardButton.No))
+            self._apply_button_style(btn)
+            button_layout.addWidget(btn)
+
+        if buttons & QMessageBox.StandardButton.Cancel:
+            btn = QPushButton("取消")
+            btn.setObjectName("cancelBtn")
+            btn.clicked.connect(lambda: self.done(QMessageBox.StandardButton.Cancel))
+            self._apply_button_style(btn)
+            button_layout.addWidget(btn)
+
+        button_layout.addStretch()
+        content_layout.addLayout(button_layout)
+        main_layout.addWidget(content_widget)
+
+    def _apply_button_style(self, btn):
+        """为按钮应用统一样式（对象名选择器 + !important）"""
+        # 使用对象名选择器提高优先级，避免被全局样式覆盖
+        style = """
+            QPushButton#okBtn, QPushButton#yesBtn, QPushButton#noBtn, QPushButton#cancelBtn {
+                text-align: center;
+                padding: 8px 16px;
+                border: 2px solid #bdc3c7;
+                color: white;
+                background-color: #3498db !important;
+                font-size: 14px;
+                font-weight: bold;
+                border-radius: 15px;          /* 一点圆角 */
+                min-width: 120px;
+                min-height: 30px;
+                margin: 0px;
+            }
+            QPushButton#okBtn:hover, QPushButton#yesBtn:hover, QPushButton#noBtn:hover, QPushButton#cancelBtn:hover {
+                color: red;
+                background-color: #27ae60 !important;  /* 悬停背景不变，文字变红 */
+                border: 2px solid #bdc3c7;
+            }
+            QPushButton#okBtn:pressed, QPushButton#yesBtn:pressed, QPushButton#noBtn:pressed, QPushButton#cancelBtn:pressed {
+                color: red;
+                background-color: #16d8de !important;  /* 按下背景变深蓝 */
+            }
+        """
+        btn.setStyleSheet(style)
+        btn.setAutoFillBackground(True)
+        btn.setFlat(False)
+        # print(f"[MikuDialog] 按钮 '{btn.text()}' 样式已应用。")
+
+    def toggle_maximize(self):
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton and self.title_bar.geometry().contains(event.pos()):
+            window = self.window()
+            if window and window.windowHandle():
+                window.windowHandle().startSystemMove()
+            event.accept()
+        else:
+            super().mousePressEvent(event)
 
 
 class Concerning(QWidget):
@@ -68,6 +260,9 @@ class Concerning(QWidget):
         self.expected_sha256 = None
 
         self.setup_ui()
+
+        # 启动后1分钟删除更新日志（如果存在）
+        self.schedule_delete_update_log()
 
     # ---------- UI 构建 ----------
     def setup_ui(self):
@@ -192,9 +387,11 @@ class Concerning(QWidget):
         if cache:
             latest_version = cache.get('latest_version', '')
             if compare_versions(latest_version, APP_VERSION) > 0:
-                QMessageBox.information(self, "提示", f"本地缓存提示有新版本 {latest_version}，正在联网确认...")
+                dlg = MikuDialog(self, "提示", f"本地缓存提示有新版本 {latest_version}，正在联网确认...", QMessageBox.StandardButton.Ok)
+                dlg.exec()
             else:
-                QMessageBox.information(self, "提示", "正在联网检查最新版本...")
+                dlg = MikuDialog(self, "提示", "正在联网检查最新版本...", QMessageBox.StandardButton.Ok)
+                dlg.exec()
 
         self.check_btn.setEnabled(False)
         self.check_btn.setText("检查中...")
@@ -237,7 +434,8 @@ class Concerning(QWidget):
             self._save_cache({'latest_version': latest_version, 'release_notes': release_notes})
 
             if compare_versions(latest_version, APP_VERSION) <= 0:
-                QMessageBox.information(self, "检查更新", "当前已是最新版本。")
+                dlg = MikuDialog(self, "检查更新", "当前已是最新版本。", QMessageBox.StandardButton.Ok)
+                dlg.exec()
                 return
 
             is_windows = sys.platform == "win32"
@@ -255,21 +453,24 @@ class Concerning(QWidget):
 
             if not target_asset and assets:
                 target_asset = assets[0]
-                QMessageBox.information(self, "提示", "未找到明确匹配当前平台的更新包，将使用第一个附件，请确保其适用于您的系统。")
+                dlg = MikuDialog(self, "提示", "未找到明确匹配当前平台的更新包，将使用第一个附件，请确保其适用于您的系统。", QMessageBox.StandardButton.Ok)
+                dlg.exec()
 
             if not target_asset:
-                QMessageBox.warning(self, "检查更新", f"发现新版本 {latest_version}，但未找到任何更新包。\n请手动访问 Releases 页面下载：\nhttps://github.com/huguangyin1997-collab/GMStools/releases")
+                dlg = MikuDialog(self, "检查更新", f"发现新版本 {latest_version}，但未找到任何更新包。\n请手动访问 Releases 页面下载：\nhttps://github.com/huguangyin1997-collab/GMStools/releases", QMessageBox.StandardButton.Ok)
+                dlg.exec()
                 return
 
             msg = (f"发现新版本 {latest_version}！\n\n更新内容：\n{release_notes}\n\n是否立即下载并安装更新？")
-            user_choice = QMessageBox.question(self, "发现新版本", msg, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            if user_choice == QMessageBox.StandardButton.Yes:
+            dlg = MikuDialog(self, "发现新版本", msg, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if dlg.exec() == QMessageBox.StandardButton.Yes:
                 self.download_update(target_asset)
 
         except json.JSONDecodeError:
             self._show_response_error(f"服务器返回的不是有效的 JSON。\n返回内容预览：{text[:500]}")
         except Exception as e:
-            QMessageBox.warning(self, "解析失败", f"版本信息处理出错：{str(e)}")
+            dlg = MikuDialog(self, "解析失败", f"版本信息处理出错：{str(e)}", QMessageBox.StandardButton.Ok)
+            dlg.exec()
 
     def _handle_network_error(self, reply, http_status, error_str):
         response_data = reply.readAll().data()
@@ -284,31 +485,24 @@ class Concerning(QWidget):
             try:
                 error_info = json.loads(response_text)
                 if "rate limit" in error_info.get("message", "").lower():
-                    QMessageBox.warning(self, "检查更新", "GitHub API 访问次数已达上限（每小时60次），请稍后再试。\n您也可以直接访问 Releases 页面查看最新版本。")
+                    dlg = MikuDialog(self, "检查更新", "GitHub API 访问次数已达上限（每小时60次），请稍后再试。\n您也可以直接访问 Releases 页面查看最新版本。", QMessageBox.StandardButton.Ok)
+                    dlg.exec()
                     return
             except:
                 pass
-            QMessageBox.warning(self, "检查更新", f"访问被拒绝 (HTTP 403)。请稍后重试。\n响应预览：{response_text[:200]}")
+            dlg = MikuDialog(self, "检查更新", f"访问被拒绝 (HTTP 403)。请稍后重试。\n响应预览：{response_text[:200]}", QMessageBox.StandardButton.Ok)
+            dlg.exec()
         elif http_status == 404:
-            QMessageBox.information(self, "检查更新", "GitHub 仓库中尚未发布任何版本。\n请访问 Releases 页面关注后续更新。")
+            dlg = MikuDialog(self, "检查更新", "GitHub 仓库中尚未发布任何版本。\n请访问 Releases 页面关注后续更新。", QMessageBox.StandardButton.Ok)
+            dlg.exec()
         else:
-            QMessageBox.warning(self, "检查失败", f"网络错误 (HTTP {http_status}): {error_str}\n\n响应预览：{response_text[:200]}")
+            dlg = MikuDialog(self, "检查失败", f"网络错误 (HTTP {http_status}): {error_str}\n\n响应预览：{response_text[:200]}", QMessageBox.StandardButton.Ok)
+            dlg.exec()
 
     def _show_response_error(self, details: str):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("响应内容异常")
-        layout = QVBoxLayoutDlg(dialog)
-        label = QLabel("从服务器返回了意外的内容，无法解析版本信息。详细信息如下：")
-        layout.addWidget(label)
-        text_edit = QTextEdit()
-        text_edit.setPlainText(details)
-        text_edit.setReadOnly(True)
-        layout.addWidget(text_edit)
-        btn = QPushButton("关闭")
-        btn.clicked.connect(dialog.accept)
-        layout.addWidget(btn)
-        dialog.resize(600, 400)
-        dialog.exec()
+        dlg = MikuDialog(self, "响应内容异常", details, QMessageBox.StandardButton.Ok)
+        dlg.resize(600, 400)
+        dlg.exec()
 
     # ---------- 下载更新 ----------
     def download_update(self, asset_info):
@@ -376,7 +570,8 @@ class Concerning(QWidget):
                 self._cleanup_temp()
                 return
             else:
-                QMessageBox.information(self, "校验成功", "文件完整性验证通过。")
+                dlg = MikuDialog(self, "校验成功", "文件完整性验证通过。", QMessageBox.StandardButton.Ok)
+                dlg.exec()
 
         extract_to = os.path.join(self.temp_dir, "new_version")
         os.makedirs(extract_to, exist_ok=True)
@@ -403,7 +598,7 @@ class Concerning(QWidget):
         self.expected_sha256 = None
         self.download_reply = None
 
-    # ---------- 核心更新逻辑（最终版，使用 env 设置 TMPDIR）----------
+    # ---------- 核心更新逻辑（双平台最终版）----------
     def perform_update(self, new_files_dir):
         if getattr(sys, 'frozen', False):
             install_dir = os.path.dirname(sys.executable)
@@ -414,41 +609,127 @@ class Concerning(QWidget):
 
         is_windows = sys.platform == "win32"
         keep_files = ['config.ini']
-        log_file = os.path.join(self.temp_dir, "update.log")
-        app_log_file = os.path.join(self.temp_dir, "app.log")
 
         if is_windows:
+            # Windows 全自动更新（完整复制 + 环境清理 + 进程终止 + 日志保存）
+            log_file = os.path.join(self.temp_dir, "update.log")
             script_path = os.path.join(self.temp_dir, "update.bat")
             with open(script_path, 'w') as f:
                 src = new_files_dir.replace('/', '\\')
-                if not src.endswith('\\'):
-                    src += '\\'
                 dst = install_dir.replace('/', '\\')
                 exclude_option = ' '.join([f'/XF {file}' for file in keep_files])
                 f.write(f"""@echo off
+setlocal enabledelayedexpansion
+echo %DATE% %TIME% 开始更新 > "{log_file}" 2>&1
+
+:: 记录当前环境变量（用于诊断）
+echo %DATE% %TIME% 当前环境变量: >> "{log_file}" 2>&1
+set >> "{log_file}" 2>&1
+
+:: 强制结束所有相关进程（避免文件占用和环境残留）
+echo %DATE% %TIME% 强制结束所有 GMStools.exe 进程... >> "{log_file}" 2>&1
+taskkill /f /im GMStools.exe >> "{log_file}" 2>&1 2>&1
+echo %DATE% %TIME% 强制结束所有 adb.exe 进程... >> "{log_file}" 2>&1
+taskkill /f /im adb.exe >> "{log_file}" 2>&1 2>&1
+
+:: 等待进程完全退出
 timeout /t 2 /nobreak >nul
-echo 正在更新 GMStools... > "{log_file}" 2>&1
-robocopy "{src}" "{dst}" /E {exclude_option} /R:1 /W:1 >> "{log_file}" 2>&1
-if %errorlevel% geq 8 (
-    echo 复制过程中出现错误，但将继续尝试启动程序。 >> "{log_file}" 2>&1
+
+:: 复制新文件（使用 /MIR 确保目标与源完全一致）
+echo %DATE% %TIME% 开始复制文件从 "{src}" 到 "{dst}" >> "{log_file}" 2>&1
+robocopy "{src}" "{dst}" /MIR {exclude_option} /R:3 /W:3 /NP /NDL /NFL /LOG+:"{log_file}"
+set COPY_RESULT=%errorlevel%
+echo %DATE% %TIME% robocopy 返回码: !COPY_RESULT! >> "{log_file}" 2>&1
+:: 返回码大于7表示有错误，但大于等于8才表示严重错误
+if !COPY_RESULT! geq 8 (
+    echo %DATE% %TIME% 复制过程中出现严重错误，将继续尝试启动程序。 >> "{log_file}" 2>&1
 )
-start "" "{install_dir}\\GMStools.exe"
+
+:: 列出目标目录内容以便验证
+echo %DATE% %TIME% 目标目录内容: >> "{log_file}" 2>&1
+dir "{dst}" /s /b >> "{log_file}" 2>&1
+
+:: 清理系统临时目录下的所有旧解压目录（避免加载错误的DLL）
+echo %DATE% %TIME% 清理旧解压目录... >> "{log_file}" 2>&1
+if exist "%TEMP%\\_MEI*" (
+    echo 删除 %TEMP%\\_MEI* >> "{log_file}" 2>&1
+    del /f /s /q "%TEMP%\\_MEI*" >nul 2>&1
+    rmdir /s /q "%TEMP%\\_MEI*" >nul 2>&1
+)
+if exist "%LOCALAPPDATA%\\Temp\\_MEI*" (
+    echo 删除 %LOCALAPPDATA%\\Temp\\_MEI* >> "{log_file}" 2>&1
+    del /f /s /q "%LOCALAPPDATA%\\Temp\\_MEI*" >nul 2>&1
+    rmdir /s /q "%LOCALAPPDATA%\\Temp\\_MEI*" >nul 2>&1
+)
+
+:: 清除可能干扰的环境变量
+set _MEIPASS=
+set PYTHONHOME=
+set PYTHONPATH=
+set TMP=%USERPROFILE%\\AppData\\Local\\Temp
+set TEMP=%USERPROFILE%\\AppData\\Local\\Temp
+
+:: 启动新程序（使用 /B 后台启动，并重定向所有输出）
+set "EXE={install_dir}\\GMStools.exe"
+echo %DATE% %TIME% 启动新版本: !EXE! >> "{log_file}" 2>&1
+start /B "" "!EXE!" >nul 2>&1
+
+:: 等待新程序初始化（给足时间解压和启动）
+echo %DATE% %TIME% 等待 15 秒让新程序初始化... >> "{log_file}" 2>&1
+timeout /t 15 /nobreak >nul
+
+:: 检查新程序是否仍在运行
+tasklist /fi "imagename eq GMStools.exe" >> "{log_file}" 2>&1
+
+:: 复制日志到安装目录
+copy "{log_file}" "{install_dir}\\update.log" /Y
+
+:: 清理临时目录
+echo %DATE% %TIME% 清理临时目录: {self.temp_dir} >> "{log_file}" 2>&1
+rmdir /s /q "{self.temp_dir}" 2>> "{log_file}"
 del "%~f0"
-rmdir /s /q "{self.temp_dir}"
 """)
-        else:  # Linux
+            # 显示自定义对话框（带 Miku 背景）
+            try:
+                dlg = MikuDialog(self, "提示", "更新脚本即将运行，程序将退出。新版本将自动启动。", QMessageBox.StandardButton.Ok)
+                if dlg.exec() == QMessageBox.StandardButton.Ok:
+                    # 使用 PowerShell 无窗口启动批处理
+                    ps_command = f'Start-Process cmd -ArgumentList "/c {script_path}" -WindowStyle Hidden'
+                    subprocess.Popen(
+                        ['powershell', '-Command', ps_command],
+                        creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                    QApplication.quit()
+            except Exception as e:
+                QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
+        else:
+            # Linux 自动更新（干净环境启动）
+            log_file = os.path.join(self.temp_dir, "update.log")
+            app_log_file = os.path.join(self.temp_dir, "app.log")
             script_path = os.path.join(self.temp_dir, "update.sh")
+
+            uid = os.getuid()
+            home = os.path.expanduser('~')
+            display = os.environ.get('DISPLAY', ':0')
+            xauthority = os.environ.get('XAUTHORITY', f'{home}/.Xauthority')
+            dbus = os.environ.get('DBUS_SESSION_BUS_ADDRESS', f'unix:path=/run/user/{uid}/bus')
+            xdg_runtime = os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{uid}')
+            lang = os.environ.get('LANG', 'C.UTF-8')
+            path = os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin')
+            user = os.environ.get('USER', os.environ.get('LOGNAME', ''))
+
             with open(script_path, 'w') as f:
-                copy_cmd = f"""#!/bin/bash
+                f.write(f"""#!/bin/bash
 exec > "{log_file}" 2>&1
 echo "脚本开始执行于 $(date)"
 echo "临时目录: {self.temp_dir}"
 echo "新文件目录: {new_files_dir}"
 echo "安装目录: {install_dir}"
 echo "旧程序PID: {old_pid}"
-sleep 2  # 给主程序退出留出时间
 
-# 等待旧程序完全退出（避免单实例冲突）
+# 等待旧程序完全退出
 if kill -0 {old_pid} 2>/dev/null; then
     echo "等待旧程序 (PID {old_pid}) 退出..."
     while kill -0 {old_pid} 2>/dev/null; do
@@ -456,94 +737,82 @@ if kill -0 {old_pid} 2>/dev/null; then
     done
     echo "旧程序已退出"
 fi
-
-# 额外等待一小段时间，确保文件句柄释放
 sleep 1
 
+# 复制新文件到安装目录（排除 config.ini）
 cd "{new_files_dir}" || {{ echo "无法进入目录 {new_files_dir}"; exit 1; }}
-echo "开始使用 tar 复制文件..."
-tar cf - --exclude='config.ini' . | (cd "{install_dir}" && tar xf -)
-TAR_EXIT=$?
-echo "tar 退出码: $TAR_EXIT"
+echo "开始复制文件..."
+for item in *; do
+    if [[ "$item" == "config.ini" ]]; then
+        continue
+    fi
+    echo "复制 $item 到 {install_dir}/"
+    cp -rf "$item" "{install_dir}/"
+done
 
-if [ $TAR_EXIT -eq 0 ]; then
-    echo "文件复制成功。"
-else
-    echo "文件复制失败！"
-    exit 1
-fi
-
+# 设置可执行权限
 if [ -f "{install_dir}/GMStools" ]; then
     chmod +x "{install_dir}/GMStools"
-    echo "已设置可执行权限。"
-else
-    echo "警告：未找到主程序文件 GMStools"
+    echo "已设置可执行权限"
 fi
 
-# 创建独立的临时目录供新程序使用（避免 /tmp 冲突）
-export TMPDIR="{install_dir}/tmp"
-mkdir -p "$TMPDIR"
-echo "设置 TMPDIR=$TMPDIR"
+# 切换到安装目录
+cd "{install_dir}"
 
-echo "启动新版本..."
-env TMPDIR="{install_dir}/tmp" nohup "{install_dir}/GMStools" > "{app_log_file}" 2>&1 &
+# 清理可能存在的旧解压目录
+echo "清理旧解压目录..."
+rm -rf /tmp/_MEI* "$TMPDIR"/_MEI* 2>/dev/null
+
+# 使用干净环境启动新程序
+echo "启动新版本（干净环境）..."
+env -i DISPLAY="{display}" XAUTHORITY="{xauthority}" DBUS_SESSION_BUS_ADDRESS="{dbus}" XDG_RUNTIME_DIR="{xdg_runtime}" HOME="{home}" USER="{user}" PATH="{path}" LANG="{lang}" ./GMStools > "{app_log_file}" 2>&1 &
 LAUNCH_PID=$!
 echo "新程序启动PID: $LAUNCH_PID"
 
-# 等待一会儿检查进程是否仍在运行
-sleep 2
-if kill -0 $LAUNCH_PID 2>/dev/null; then
-    echo "新程序正在运行"
+# 等待几秒检查解压目录
+sleep 5
+if [ -d /tmp/_MEI* ] || [ -d "$TMPDIR"/_MEI* ]; then
+    echo "解压目录已创建，启动成功"
 else
-    echo "警告：新程序可能已退出"
-    if [ -f "{app_log_file}" ]; then
-        echo "应用日志内容:" >> "{log_file}"
-        cat "{app_log_file}" >> "{log_file}"
-    fi
+    echo "警告：未发现解压目录，可能启动失败"
+    echo "应用日志："
+    cat "{app_log_file}"
 fi
 
 # 复制日志到安装目录
 cp "{log_file}" "{install_dir}/update.log"
-
 echo "日志已保存到 {install_dir}/update.log"
-echo "脚本执行完毕，清理临时目录..."
+
+# 清理临时目录
 rm -rf "{self.temp_dir}"
 rm -- "$0"
-"""
-                f.write(copy_cmd)
+""")
             os.chmod(script_path, 0o755)
 
-        # 确认脚本文件已成功创建
-        if not os.path.exists(script_path):
-            QMessageBox.critical(self, "错误", f"更新脚本未能创建: {script_path}")
-            return
-
-        # 弹出提示框，让用户选择手动或自动执行
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("更新准备就绪")
-        msg_box.setText(
-            f"更新脚本已生成，位于临时目录：\n{self.temp_dir}\n\n"
-            f"您可以手动执行该目录下的 update.sh（Linux）或 update.bat（Windows）来调试。\n\n"
-            f"点击“手动”将保持程序运行，您可以在终端中手动执行脚本；\n"
-            f"点击“自动”将后台运行脚本并立即退出程序，更新完成后新程序将自动启动，日志将保存到安装目录。"
-        )
-        manual_btn = msg_box.addButton("手动", QMessageBox.ButtonRole.ActionRole)
-        auto_btn = msg_box.addButton("自动", QMessageBox.ButtonRole.AcceptRole)
-        msg_box.exec()
-
-        if msg_box.clickedButton() == manual_btn:
-            QMessageBox.information(self, "提示", f"请手动执行脚本：\n{script_path}\n\n执行后可在临时目录查看 update.log 和 app.log 日志。\n完成后可手动重启程序。")
-            return
-        else:
-            # 自动模式：异步启动脚本，然后退出程序
             try:
-                subprocess.Popen(['/bin/bash', script_path], start_new_session=True)
+                dlg = MikuDialog(self, "提示", "更新脚本即将运行，程序将退出。新版本将自动启动。", QMessageBox.StandardButton.Ok)
+                if dlg.exec() == QMessageBox.StandardButton.Ok:
+                    subprocess.Popen(['/bin/bash', script_path], start_new_session=True)
+                    QApplication.quit()
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
-                self.check_btn.setEnabled(True)
-                self.check_btn.setText("检查更新")
-                return
 
-            # 提示用户并退出
-            QMessageBox.information(self, "提示", "更新脚本已后台运行，程序将退出。新版本启动后请查看安装目录下的 update.log 了解详情。")
-            QTimer.singleShot(1000, QApplication.quit)
+    # ---------- 自动删除更新日志 ----------
+    def schedule_delete_update_log(self):
+        """检查安装目录下的 update.log，1分钟后删除"""
+        if getattr(sys, 'frozen', False):
+            install_dir = os.path.dirname(sys.executable)
+        else:
+            install_dir = os.path.dirname(os.path.abspath(__file__))  # 与 perform_update 保持一致
+        log_path = os.path.join(install_dir, "update.log")
+        if os.path.exists(log_path):
+            print(f"[Concerning] 发现更新日志 {log_path}，1分钟后删除")
+            QTimer.singleShot(60000, lambda: self.delete_update_log(log_path))
+
+    def delete_update_log(self, log_path):
+        """删除指定的日志文件"""
+        try:
+            os.remove(log_path)
+            print(f"[Concerning] 已删除更新日志: {log_path}")
+        except Exception as e:
+            print(f"[Concerning] 删除更新日志失败: {e}")

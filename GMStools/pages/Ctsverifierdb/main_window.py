@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QComboBox, QHBoxLayout, QPushButton, QMessageBox, QFrame, QTextEdit, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QComboBox, QHBoxLayout, QPushButton, QMessageBox, QTextEdit, QLabel
 from PyQt6.QtCore import Qt, QTimer
 import os
 
@@ -17,6 +17,12 @@ class MainWindow(QWidget):
         self.directory_manager = DirectoryManager(self)
         self.operation_handler = OperationHandler(self.device_manager, self.directory_manager)
         self.setup_ui()
+        
+        # 使用单次定时器延迟执行 ADB 检查，避免阻塞 GUI 启动
+        QTimer.singleShot(0, self.delayed_adb_check)
+    
+    def delayed_adb_check(self):
+        """延迟执行的 ADB 环境检查"""
         self.device_manager.check_adb_environment(self.refresh_device_list, self.show_adb_error)
     
     def setup_ui(self):

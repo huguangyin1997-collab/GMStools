@@ -3,7 +3,7 @@ import os
 import sys
 import platform
 
-# ---------- 新增：隐藏子进程窗口的辅助函数 ----------
+# ---------- 隐藏子进程窗口的辅助函数 ----------
 def _get_subprocess_kwargs():
     """返回用于隐藏 Windows 控制台窗口的参数"""
     kwargs = {}
@@ -120,10 +120,10 @@ class DeviceManager:
             return None
     
     def _find_system_adb(self):
-        """查找系统ADB路径"""
+        """查找系统ADB路径 - 已修复，添加隐藏窗口参数"""
         try:
             system = platform.system()
-            kwargs = _get_subprocess_kwargs()  # 隐藏窗口
+            kwargs = _get_subprocess_kwargs()  # 获取隐藏窗口参数
             
             if system == "Windows":
                 # Windows: 使用 where 命令
@@ -133,7 +133,7 @@ class DeviceManager:
                     text=True, 
                     timeout=5,
                     shell=True,
-                    **kwargs
+                    **kwargs  # 传入隐藏窗口参数
                 )
             else:
                 # Linux: 使用 which 命令
@@ -142,7 +142,7 @@ class DeviceManager:
                     capture_output=True, 
                     text=True, 
                     timeout=5,
-                    **kwargs
+                    **kwargs  # 传入隐藏窗口参数（Linux 下无副作用）
                 )
             
             if result.returncode == 0:

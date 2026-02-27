@@ -4,7 +4,7 @@ import re
 import sys
 from datetime import datetime
 
-# ---------- 新增：隐藏子进程窗口的辅助函数（与device_manager保持一致） ----------
+# ---------- 隐藏子进程窗口的辅助函数 ----------
 def _get_subprocess_kwargs():
     """返回用于隐藏 Windows 控制台窗口的参数"""
     kwargs = {}
@@ -27,7 +27,7 @@ class OperationHandler:
         self.directory_manager = directory_manager
     
     def perform_import(self, device, file_path):
-        """执行导入操作 - 基于shell脚本改写"""
+        """执行导入操作 - 基于shell脚本改写，使用列表参数"""
         try:
             # 检查设备是否仍然连接
             if not self.device_manager.is_device_connected(device):
@@ -37,33 +37,29 @@ class OperationHandler:
             if not adb_path:
                 return False, "ADB路径未找到，请检查ADB环境"
             
-            # 执行完整的导入命令序列
-            commands = [
-                # 推送数据库文件到设备
-                f"\"{adb_path}\" -s {device} push \"{file_path}\" /data/local/tmp/db",
-                # 备份原数据库
-                f"\"{adb_path}\" -s {device} shell \"run-as com.android.cts.verifier cat /data/data/com.android.cts.verifier/databases/results.db > /data/local/tmp/db.bkp\"",
-                # 替换数据库
-                f"\"{adb_path}\" -s {device} shell \"run-as com.android.cts.verifier cp /data/local/tmp/db /data/data/com.android.cts.verifier/databases/results.db\"",
-                # 清理临时文件
-                f"\"{adb_path}\" -s {device} shell \"rm -f /data/local/tmp/db /data/local/tmp/db.bkp\""
-            ]
-            
             kwargs = _get_subprocess_kwargs()
-            # 执行所有命令
-            for cmd in commands:
-                print(f"执行命令: {cmd}")
-                result = subprocess.run(
-                    cmd, 
-                    shell=True, 
-                    capture_output=True, 
-                    text=True, 
-                    timeout=30,
-                    **kwargs
-                )
-                
-                if result.returncode != 0:
-                    raise Exception(f"命令执行失败: {result.stderr}")
+            
+            # 1. 推送数据库文件到设备临时目录
+            push_cmd = [adb_path, "-s", device, "push", file_path, "/data/local/tmp/db"]
+            result = subprocess.run(push_cmd, capture_output=True, text=True, timeout=30, **kwargs)
+            if result.returncode != 0:
+                raise Exception(f"推送文件失败: {result.stderr}")
+            
+            # 2. 备份原数据库到临时文件
+            backup_cmd = [adb_path, "-s", device, "shell", "run-as com.android.cts.verifier cat /data/data/com.android.cts.verifier/databases/results.db > /data/local/tmp/db.bkp"]
+            result = subprocess.run(backup_cmd, capture_output=True, text=True, timeout=30, **kwargs)
+            if result.returncode != 0:
+                raise Exception(f"备份数据库失败: {result.stderr}")
+            
+            # 3. 替换数据库
+            replace_cmd = [adb_path, "-s", device, "shell", "run-as com.android.cts.verifier cp /data/local/tmp/db /data/data/com.android.cts.verifier/databases/results.db"]
+            result = subprocess.run(replace_cmd, capture_output=True, text=True, timeout=30, **kwargs)
+            if result.returncode != 0:
+                raise Exception(f"替换数据库失败: {result.stderr}")
+            
+            # 4. 清理临时文件
+            clean_cmd = [adb_path, "-s", device, "shell", "rm -f /data/local/tmp/db /data/local/tmp/db.bkp"]
+            subprocess.run(clean_cmd, capture_output=True, text=True, timeout=30, **kwargs)  # 忽略清理错误
             
             return True, f"成功导入数据库到设备 {device}"
             
@@ -71,7 +67,7 @@ class OperationHandler:
             return False, f"导入过程中出现错误: {str(e)}"
     
     def perform_export(self, device, directory):
-        """执行导出操作 - 使用命令列表方式"""
+        """执行导出操作 - 使用列表参数"""
         try:
             # 检查设备是否仍然连接
             if not self.device_manager.is_device_connected(device):
@@ -81,38 +77,31 @@ class OperationHandler:
             if not adb_path:
                 return False, "ADB路径未找到，请检查ADB环境"
             
+            kwargs = _get_subprocess_kwargs()
+            
             # 生成文件名
             file_name = self._generate_filename(device)
             full_path = os.path.join(directory, file_name)
             
-            # 执行完整的导出命令序列
-            commands = [
-                # 创建临时文件
-                f"\"{adb_path}\" -s {device} shell \"touch /data/local/tmp/db\"",
-                # 检查CTS Verifier进程
-                f"\"{adb_path}\" -s {device} shell \"ps | grep com.android.cts.verifier\"",
-                # 备份数据库到临时文件
-                f"\"{adb_path}\" -s {device} shell \"run-as com.android.cts.verifier cat /data/data/com.android.cts.verifier/databases/results.db > /data/local/tmp/db\"",
-                # 拉取文件到本地
-                f"\"{adb_path}\" -s {device} pull /data/local/tmp/db \"{full_path}\""
-            ]
+            # 1. 创建临时文件（确保存在）
+            touch_cmd = [adb_path, "-s", device, "shell", "touch /data/local/tmp/db"]
+            subprocess.run(touch_cmd, capture_output=True, text=True, timeout=30, **kwargs)  # 忽略错误
             
-            kwargs = _get_subprocess_kwargs()
-            # 执行所有命令
-            for cmd in commands:
-                print(f"执行命令: {cmd}")
-                result = subprocess.run(
-                    cmd, 
-                    shell=True, 
-                    capture_output=True, 
-                    text=True, 
-                    timeout=30,
-                    **kwargs
-                )
-                
-                # 忽略检查进程命令的错误，因为grep可能找不到进程
-                if result.returncode != 0 and "ps | grep" not in cmd:
-                    raise Exception(f"命令执行失败: {result.stderr}")
+            # 2. 检查CTS Verifier进程（可选，忽略错误）
+            ps_cmd = [adb_path, "-s", device, "shell", "ps | grep com.android.cts.verifier"]
+            subprocess.run(ps_cmd, capture_output=True, text=True, timeout=30, **kwargs)
+            
+            # 3. 备份数据库到临时文件
+            backup_cmd = [adb_path, "-s", device, "shell", "run-as com.android.cts.verifier cat /data/data/com.android.cts.verifier/databases/results.db > /data/local/tmp/db"]
+            result = subprocess.run(backup_cmd, capture_output=True, text=True, timeout=30, **kwargs)
+            if result.returncode != 0:
+                raise Exception(f"备份数据库失败: {result.stderr}")
+            
+            # 4. 拉取文件到本地
+            pull_cmd = [adb_path, "-s", device, "pull", "/data/local/tmp/db", full_path]
+            result = subprocess.run(pull_cmd, capture_output=True, text=True, timeout=30, **kwargs)
+            if result.returncode != 0:
+                raise Exception(f"拉取文件失败: {result.stderr}")
             
             return True, f"成功导出数据库到: {full_path}"
             
@@ -143,27 +132,22 @@ class OperationHandler:
         return file_name
     
     def _run_adb_command(self, device, command):
-        """执行ADB命令"""
+        """执行ADB命令（已修改为列表参数）"""
         adb_path = self.device_manager.get_detected_adb_path()
         if not adb_path:
             raise Exception("ADB路径未找到")
         
-        full_command = f"\"{adb_path}\" -s {device} {command}"
+        # 将命令字符串拆分为列表（注意：命令可能包含参数，但这里简单处理）
+        # 对于复杂命令（如带管道的），我们保留原始方式，但这种情况较少。
+        # 这里假设 command 是一个简单的参数列表（如 "shell getprop ro.build.product"）
+        parts = command.split()
+        cmd = [adb_path, "-s", device] + parts
         
+        kwargs = _get_subprocess_kwargs()
         try:
-            kwargs = _get_subprocess_kwargs()
-            result = subprocess.run(
-                full_command, 
-                shell=True, 
-                capture_output=True, 
-                text=True, 
-                timeout=30,
-                **kwargs
-            )
-            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, **kwargs)
             if result.returncode != 0:
                 raise Exception(f"ADB命令执行失败: {result.stderr}")
-            
             return result.stdout
         except subprocess.TimeoutExpired:
             raise Exception("ADB命令执行超时")

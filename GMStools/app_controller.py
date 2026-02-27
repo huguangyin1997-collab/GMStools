@@ -1,7 +1,8 @@
 import sys
 import os
 import ctypes
-from PyQt6.QtWidgets import QApplication
+import traceback
+from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtCore import QSharedMemory, QSettings
 from window_manager import WindowManager
@@ -74,11 +75,37 @@ class AppController:
             self.window.show()
             sys.exit(self.app.exec())
 
+# def main():
+#     controller = AppController()
+#     controller.initialize_application()
+#     controller.create_main_window()
+#     controller.run_application()
 def main():
-    controller = AppController()
-    controller.initialize_application()
-    controller.create_main_window()
-    controller.run_application()
-
+    try:
+        # ---------- 原有的启动代码 ----------
+        controller = AppController()
+        controller.initialize_application()
+        controller.create_main_window()
+        controller.run_application()
+        # ----------------------------------
+    except Exception as e:
+        # 1. 将异常堆栈写入 crash.log 文件
+        with open("crash.log", "w", encoding="utf-8") as f:
+            traceback.print_exc(file=f)
+        
+        # 2. 尝试弹出错误对话框（即使 QApplication 未创建也能工作）
+        #    如果 QApplication 已存在则复用，否则新建一个临时实例
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])  # 临时创建
+        QMessageBox.critical(
+            None,
+            "GMStools 启动失败",
+            f"程序启动时发生未捕获的异常，已保存错误信息到 crash.log 文件。\n\n"
+            f"错误类型：{type(e).__name__}\n"
+            f"错误信息：{str(e)}\n\n"
+            f"请将 crash.log 文件发送给开发者。"
+        )
+        sys.exit(1)  # 终止程序
 if __name__ == "__main__":
     main()
