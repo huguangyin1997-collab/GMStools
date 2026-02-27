@@ -1,0 +1,20 @@
+脚本开始执行于 Fri Feb 27 02:16:03 PM CST 2026
+临时目录: /tmp/gmstools_update_k5x8ndqa
+新文件目录: /tmp/gmstools_update_k5x8ndqa/new_version/release_linux
+安装目录: /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning
+旧程序PID: 19860
+等待旧程序 (PID 19860) 退出...
+旧程序已退出
+开始复制文件...
+复制 GMStools 到 /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning/
+复制 GMStools.desktop 到 /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning/
+复制 icon.png 到 /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning/
+复制 install.sh 到 /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning/
+复制 Miku.jpg 到 /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning/
+复制 README.txt 到 /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning/
+复制 uninstall.sh 到 /home/huguangyin/Desktop/GMStools/GMStools/pages/Concerning/
+已设置可执行权限
+清理旧解压目录...
+启动新版本（干净环境）...
+新程序启动PID: 19946
+解压目录已创建，启动成功
