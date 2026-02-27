@@ -23,7 +23,7 @@ from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor, QMouseEvent
 from CustomTitle.titleWindowControlButtons import WindowControlButtons
 
 # ==================== 当前程序版本 ====================
-APP_VERSION = "1.2.12"
+APP_VERSION = "1.2.13"
 
 # GitHub API 地址（最新 Release）
 GITHUB_API_URL = "https://api.github.com/repos/huguangyin1997-collab/GMStools/releases/latest"
@@ -153,7 +153,6 @@ class MikuDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.addStretch()
 
-        # 创建按钮并设置唯一对象名
         if buttons & QMessageBox.StandardButton.Ok:
             btn = QPushButton("确定")
             btn.setObjectName("okBtn")
@@ -187,8 +186,6 @@ class MikuDialog(QDialog):
         main_layout.addWidget(content_widget)
 
     def _apply_button_style(self, btn):
-        """为按钮应用统一样式（对象名选择器 + !important）"""
-        # 使用对象名选择器提高优先级，避免被全局样式覆盖
         style = """
             QPushButton#okBtn, QPushButton#yesBtn, QPushButton#noBtn, QPushButton#cancelBtn {
                 text-align: center;
@@ -198,25 +195,24 @@ class MikuDialog(QDialog):
                 background-color: #3498db !important;
                 font-size: 14px;
                 font-weight: bold;
-                border-radius: 15px;          /* 一点圆角 */
+                border-radius: 15px;
                 min-width: 120px;
                 min-height: 30px;
                 margin: 0px;
             }
             QPushButton#okBtn:hover, QPushButton#yesBtn:hover, QPushButton#noBtn:hover, QPushButton#cancelBtn:hover {
                 color: red;
-                background-color: #27ae60 !important;  /* 悬停背景不变，文字变红 */
+                background-color: #27ae60 !important;
                 border: 2px solid #bdc3c7;
             }
             QPushButton#okBtn:pressed, QPushButton#yesBtn:pressed, QPushButton#noBtn:pressed, QPushButton#cancelBtn:pressed {
                 color: red;
-                background-color: #16d8de !important;  /* 按下背景变深蓝 */
+                background-color: #16d8de !important;
             }
         """
         btn.setStyleSheet(style)
         btn.setAutoFillBackground(True)
         btn.setFlat(False)
-        # print(f"[MikuDialog] 按钮 '{btn.text()}' 样式已应用。")
 
     def toggle_maximize(self):
         if self.isMaximized():
@@ -246,22 +242,18 @@ class Concerning(QWidget):
             os.makedirs(self.app_data_dir)
         self.cache_path = os.path.join(self.app_data_dir, CACHE_FILE)
 
-        # 网络管理器
         self.network_manager = QNetworkAccessManager()
         self.network_manager.finished.connect(self.on_update_check_finished)
 
         self.download_manager = QNetworkAccessManager()
         self.download_manager.finished.connect(self.on_download_finished)
 
-        # 下载临时变量
         self.download_reply = None
         self.temp_dir = None
         self.download_path = None
         self.expected_sha256 = None
 
         self.setup_ui()
-
-        # 启动后1分钟删除更新日志（如果存在）
         self.schedule_delete_update_log()
 
     # ---------- UI 构建 ----------
@@ -281,13 +273,11 @@ class Concerning(QWidget):
         layout.setSpacing(20)
         layout.setContentsMargins(30, 30, 30, 30)
 
-        # 标题
         title = QLabel("关于 GMStools")
         title.setStyleSheet("font-size: 28px; font-weight: bold; color: #2c3e50; padding: 15px; background-color: rgba(255, 255, 255, 0.7); border-radius: 10px;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
-        # 版本信息卡片
         version_card = QWidget()
         version_card.setStyleSheet("background-color: rgba(255, 255, 255, 0.7); border: 2px solid #bdc3c7; border-radius: 8px; padding: 15px;")
         version_layout = QVBoxLayout(version_card)
@@ -316,7 +306,6 @@ class Concerning(QWidget):
         version_layout.addLayout(button_layout)
         layout.addWidget(version_card)
 
-        # 开发者卡片
         developer_card = QWidget()
         developer_card.setStyleSheet("background-color: rgba(255, 255, 255, 0.7); border: 2px solid #bdc3c7; border-radius: 8px; padding: 15px;")
         dev_layout = QVBoxLayout(developer_card)
@@ -329,7 +318,6 @@ class Concerning(QWidget):
         dev_layout.addWidget(dev_info)
         layout.addWidget(developer_card)
 
-        # 联系与支持卡片
         contact_card = QWidget()
         contact_card.setStyleSheet("background-color: rgba(255, 255, 255, 0.7); border: 2px solid #bdc3c7; border-radius: 8px; padding: 15px;")
         contact_layout = QVBoxLayout(contact_card)
@@ -342,7 +330,6 @@ class Concerning(QWidget):
         contact_layout.addWidget(contact_info)
         layout.addWidget(contact_card)
 
-        # 版权信息卡片
         copyright_card = QWidget()
         copyright_card.setStyleSheet("background-color: rgba(255, 255, 255, 0.7); border: 2px solid #bdc3c7; border-radius: 8px; padding: 15px;")
         copyright_layout = QVBoxLayout(copyright_card)
@@ -588,7 +575,6 @@ class Concerning(QWidget):
             extract_to = os.path.join(extract_to, contents[0])
 
         self.perform_update(extract_to)
-        # 不再在这里清理临时目录，让更新脚本自己清理
 
     def _cleanup_temp(self):
         if self.temp_dir and os.path.exists(self.temp_dir):
@@ -598,7 +584,7 @@ class Concerning(QWidget):
         self.expected_sha256 = None
         self.download_reply = None
 
-    # ---------- 核心更新逻辑（双平台最终版）----------
+    # ---------- 核心更新逻辑（最终版：隐藏窗口，只复制/更新，不删除其他文件，保留 config.ini）----------
     def perform_update(self, new_files_dir):
         if getattr(sys, 'frozen', False):
             install_dir = os.path.dirname(sys.executable)
@@ -611,53 +597,50 @@ class Concerning(QWidget):
         keep_files = ['config.ini']
 
         if is_windows:
-            # Windows 全自动更新（完整复制 + 环境清理 + 进程终止 + 日志保存）
             log_file = os.path.join(self.temp_dir, "update.log")
             script_path = os.path.join(self.temp_dir, "update.bat")
-            with open(script_path, 'w') as f:
+            with open(script_path, 'w', encoding='utf-8') as f:
                 src = new_files_dir.replace('/', '\\')
                 dst = install_dir.replace('/', '\\')
-                exclude_option = ' '.join([f'/XF {file}' for file in keep_files])
+                # 为每个保留文件生成带引号的排除参数，确保文件名中的空格和特殊字符被正确处理
+                exclude_options = ' '.join([f'/XF "{file}"' for file in keep_files])
                 f.write(f"""@echo off
+chcp 65001 >nul
 setlocal enabledelayedexpansion
 echo %DATE% %TIME% 开始更新 > "{log_file}" 2>&1
 
-:: 记录当前环境变量（用于诊断）
-echo %DATE% %TIME% 当前环境变量: >> "{log_file}" 2>&1
-set >> "{log_file}" 2>&1
+:: 检查源目录是否存在
+if not exist "{src}\\*" (
+    echo %DATE% %TIME% 错误：源目录 {src} 不存在或为空 >> "{log_file}" 2>&1
+    exit /b 1
+)
 
-:: 强制结束所有相关进程（避免文件占用和环境残留）
-echo %DATE% %TIME% 强制结束所有 GMStools.exe 进程... >> "{log_file}" 2>&1
+:: 强制结束相关进程
+echo %DATE% %TIME% 强制结束 GMStools.exe 和 adb.exe ... >> "{log_file}" 2>&1
 taskkill /f /im GMStools.exe >> "{log_file}" 2>&1 2>&1
-echo %DATE% %TIME% 强制结束所有 adb.exe 进程... >> "{log_file}" 2>&1
 taskkill /f /im adb.exe >> "{log_file}" 2>&1 2>&1
-
-:: 等待进程完全退出
 timeout /t 2 /nobreak >nul
 
-:: 复制新文件（使用 /MIR 确保目标与源完全一致）
+:: 复制新文件（使用 /E 复制子目录，但不删除多余文件，排除 config.ini）
 echo %DATE% %TIME% 开始复制文件从 "{src}" 到 "{dst}" >> "{log_file}" 2>&1
-robocopy "{src}" "{dst}" /MIR {exclude_option} /R:3 /W:3 /NP /NDL /NFL /LOG+:"{log_file}"
+robocopy "{src}" "{dst}" /E {exclude_options} /R:3 /W:3 /NP /NDL /NFL /LOG+:"{log_file}"
 set COPY_RESULT=%errorlevel%
 echo %DATE% %TIME% robocopy 返回码: !COPY_RESULT! >> "{log_file}" 2>&1
-:: 返回码大于7表示有错误，但大于等于8才表示严重错误
 if !COPY_RESULT! geq 8 (
-    echo %DATE% %TIME% 复制过程中出现严重错误，将继续尝试启动程序。 >> "{log_file}" 2>&1
+    echo %DATE% %TIME% 复制过程中出现严重错误 >> "{log_file}" 2>&1
 )
 
 :: 列出目标目录内容以便验证
 echo %DATE% %TIME% 目标目录内容: >> "{log_file}" 2>&1
 dir "{dst}" /s /b >> "{log_file}" 2>&1
 
-:: 清理系统临时目录下的所有旧解压目录（避免加载错误的DLL）
+:: 清理系统临时目录下的旧解压目录
 echo %DATE% %TIME% 清理旧解压目录... >> "{log_file}" 2>&1
 if exist "%TEMP%\\_MEI*" (
-    echo 删除 %TEMP%\\_MEI* >> "{log_file}" 2>&1
     del /f /s /q "%TEMP%\\_MEI*" >nul 2>&1
     rmdir /s /q "%TEMP%\\_MEI*" >nul 2>&1
 )
 if exist "%LOCALAPPDATA%\\Temp\\_MEI*" (
-    echo 删除 %LOCALAPPDATA%\\Temp\\_MEI* >> "{log_file}" 2>&1
     del /f /s /q "%LOCALAPPDATA%\\Temp\\_MEI*" >nul 2>&1
     rmdir /s /q "%LOCALAPPDATA%\\Temp\\_MEI*" >nul 2>&1
 )
@@ -669,12 +652,12 @@ set PYTHONPATH=
 set TMP=%USERPROFILE%\\AppData\\Local\\Temp
 set TEMP=%USERPROFILE%\\AppData\\Local\\Temp
 
-:: 启动新程序（使用 /B 后台启动，并重定向所有输出）
+:: 启动新程序（后台启动，不等待）
 set "EXE={install_dir}\\GMStools.exe"
 echo %DATE% %TIME% 启动新版本: !EXE! >> "{log_file}" 2>&1
 start /B "" "!EXE!" >nul 2>&1
 
-:: 等待新程序初始化（给足时间解压和启动）
+:: 等待新程序初始化
 echo %DATE% %TIME% 等待 15 秒让新程序初始化... >> "{log_file}" 2>&1
 timeout /t 15 /nobreak >nul
 
@@ -684,20 +667,27 @@ tasklist /fi "imagename eq GMStools.exe" >> "{log_file}" 2>&1
 :: 复制日志到安装目录
 copy "{log_file}" "{install_dir}\\update.log" /Y
 
-:: 清理临时目录
-echo %DATE% %TIME% 清理临时目录: {self.temp_dir} >> "{log_file}" 2>&1
-rmdir /s /q "{self.temp_dir}" 2>> "{log_file}"
+:: 延迟后清理临时目录
+timeout /t 5 /nobreak >nul
+if exist "{self.temp_dir}" (
+    echo %DATE% %TIME% 清理临时目录: {self.temp_dir} >> "{log_file}" 2>&1
+    rmdir /s /q "{self.temp_dir}" 2>> "{log_file}"
+)
+
+:: 删除自身
 del "%~f0"
 """)
-            # 显示自定义对话框（带 Miku 背景）
             try:
                 dlg = MikuDialog(self, "提示", "更新脚本即将运行，程序将退出。新版本将自动启动。", QMessageBox.StandardButton.Ok)
                 if dlg.exec() == QMessageBox.StandardButton.Ok:
-                    # 使用 PowerShell 无窗口启动批处理
-                    ps_command = f'Start-Process cmd -ArgumentList "/c {script_path}" -WindowStyle Hidden'
+                    # 完全隐藏窗口启动
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    startupinfo.wShowWindow = subprocess.SW_HIDE
                     subprocess.Popen(
-                        ['powershell', '-Command', ps_command],
-                        creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS,
+                        ['cmd', '/c', script_path],
+                        startupinfo=startupinfo,
+                        creationflags=subprocess.CREATE_NO_WINDOW,
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL
                     )
@@ -705,7 +695,7 @@ del "%~f0"
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
         else:
-            # Linux 自动更新（干净环境启动）
+            # Linux 部分（保持不变）
             log_file = os.path.join(self.temp_dir, "update.log")
             app_log_file = os.path.join(self.temp_dir, "app.log")
             script_path = os.path.join(self.temp_dir, "update.sh")
@@ -729,7 +719,6 @@ echo "新文件目录: {new_files_dir}"
 echo "安装目录: {install_dir}"
 echo "旧程序PID: {old_pid}"
 
-# 等待旧程序完全退出
 if kill -0 {old_pid} 2>/dev/null; then
     echo "等待旧程序 (PID {old_pid}) 退出..."
     while kill -0 {old_pid} 2>/dev/null; do
@@ -739,7 +728,6 @@ if kill -0 {old_pid} 2>/dev/null; then
 fi
 sleep 1
 
-# 复制新文件到安装目录（排除 config.ini）
 cd "{new_files_dir}" || {{ echo "无法进入目录 {new_files_dir}"; exit 1; }}
 echo "开始复制文件..."
 for item in *; do
@@ -750,26 +738,19 @@ for item in *; do
     cp -rf "$item" "{install_dir}/"
 done
 
-# 设置可执行权限
 if [ -f "{install_dir}/GMStools" ]; then
     chmod +x "{install_dir}/GMStools"
     echo "已设置可执行权限"
 fi
 
-# 切换到安装目录
 cd "{install_dir}"
-
-# 清理可能存在的旧解压目录
-echo "清理旧解压目录..."
 rm -rf /tmp/_MEI* "$TMPDIR"/_MEI* 2>/dev/null
 
-# 使用干净环境启动新程序
-echo "启动新版本（干净环境）..."
+echo "启动新版本..."
 env -i DISPLAY="{display}" XAUTHORITY="{xauthority}" DBUS_SESSION_BUS_ADDRESS="{dbus}" XDG_RUNTIME_DIR="{xdg_runtime}" HOME="{home}" USER="{user}" PATH="{path}" LANG="{lang}" ./GMStools > "{app_log_file}" 2>&1 &
 LAUNCH_PID=$!
 echo "新程序启动PID: $LAUNCH_PID"
 
-# 等待几秒检查解压目录
 sleep 5
 if [ -d /tmp/_MEI* ] || [ -d "$TMPDIR"/_MEI* ]; then
     echo "解压目录已创建，启动成功"
@@ -779,11 +760,8 @@ else
     cat "{app_log_file}"
 fi
 
-# 复制日志到安装目录
 cp "{log_file}" "{install_dir}/update.log"
 echo "日志已保存到 {install_dir}/update.log"
-
-# 清理临时目录
 rm -rf "{self.temp_dir}"
 rm -- "$0"
 """)
@@ -799,18 +777,16 @@ rm -- "$0"
 
     # ---------- 自动删除更新日志 ----------
     def schedule_delete_update_log(self):
-        """检查安装目录下的 update.log，1分钟后删除"""
         if getattr(sys, 'frozen', False):
             install_dir = os.path.dirname(sys.executable)
         else:
-            install_dir = os.path.dirname(os.path.abspath(__file__))  # 与 perform_update 保持一致
+            install_dir = os.path.dirname(os.path.abspath(__file__))
         log_path = os.path.join(install_dir, "update.log")
         if os.path.exists(log_path):
             print(f"[Concerning] 发现更新日志 {log_path}，1分钟后删除")
             QTimer.singleShot(60000, lambda: self.delete_update_log(log_path))
 
     def delete_update_log(self, log_path):
-        """删除指定的日志文件"""
         try:
             os.remove(log_path)
             print(f"[Concerning] 已删除更新日志: {log_path}")
