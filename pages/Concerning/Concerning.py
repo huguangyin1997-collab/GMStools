@@ -23,7 +23,7 @@ from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor, QMouseEvent
 from CustomTitle.titleWindowControlButtons import WindowControlButtons
 
 # ==================== 当前程序版本 ====================
-APP_VERSION = "1.2.9"
+APP_VERSION = "1.2.12"
 
 # GitHub API 地址（最新 Release）
 GITHUB_API_URL = "https://api.github.com/repos/huguangyin1997-collab/GMStools/releases/latest"
