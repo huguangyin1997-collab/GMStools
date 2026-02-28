@@ -21,4 +21,4 @@ GMStools 适用于GMS认证测试的团队和个人。
 
 开源与贡献
 
-本项目已在 GitHub 上开源，欢迎访问 https://github.com/huguangyin1997-collab/GMStools 获取源码、提交 issue 或参与贡献。我们期待与社区一起让 GMStools 变得更好！
+本项目已在 GitHub 上开源，欢迎访问 https://github.com/huguangyin1997-collab/GMStools.git 获取源码、提交 issue 或参与贡献。我们期待与社区一起让 GMStools 变得更好！
