@@ -254,7 +254,7 @@ class Concerning(QWidget):
         self.expected_sha256 = None
 
         self.setup_ui()
-        self.schedule_delete_update_log()
+        # self.schedule_delete_update_log()
 
     # ---------- UI 构建 ----------
     def setup_ui(self):
@@ -775,20 +775,20 @@ rm -- "$0"
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
 
-    # ---------- 自动删除更新日志 ----------
-    def schedule_delete_update_log(self):
-        if getattr(sys, 'frozen', False):
-            install_dir = os.path.dirname(sys.executable)
-        else:
-            install_dir = os.path.dirname(os.path.abspath(__file__))
-        log_path = os.path.join(install_dir, "update.log")
-        if os.path.exists(log_path):
-            print(f"[Concerning] 发现更新日志 {log_path}，1分钟后删除")
-            QTimer.singleShot(60000, lambda: self.delete_update_log(log_path))
+    # # ---------- 自动删除更新日志 ----------
+    # def schedule_delete_update_log(self):
+    #     if getattr(sys, 'frozen', False):
+    #         install_dir = os.path.dirname(sys.executable)
+    #     else:
+    #         install_dir = os.path.dirname(os.path.abspath(__file__))
+    #     log_path = os.path.join(install_dir, "update.log")
+    #     if os.path.exists(log_path):
+    #         print(f"[Concerning] 发现更新日志 {log_path}，1分钟后删除")
+    #         QTimer.singleShot(60000, lambda: self.delete_update_log(log_path))
 
-    def delete_update_log(self, log_path):
-        try:
-            os.remove(log_path)
-            print(f"[Concerning] 已删除更新日志: {log_path}")
-        except Exception as e:
-            print(f"[Concerning] 删除更新日志失败: {e}")
+    # def delete_update_log(self, log_path):
+    #     try:
+    #         os.remove(log_path)
+    #         print(f"[Concerning] 已删除更新日志: {log_path}")
+    #     except Exception as e:
+    #         print(f"[Concerning] 删除更新日志失败: {e}")
