@@ -146,10 +146,59 @@ class CheckupReportUI(QWidget):
         self.force_button_style_update()
     
     def on_directory_path_changed(self, text):
-        """处理目录路径变化 - 更新边框颜色"""
-        has_directory = bool(text.strip())
-        self.directory_path.setStyleSheet(self.get_line_edit_style(has_directory))
-    
+        """处理目录路径变化 - 更新控件样式和启用状态"""
+        path = text.strip()
+        has_directory = bool(path)
+        path_exists = os.path.exists(path) and os.path.isdir(path) if has_directory else False
+
+        # 1. 更新目录输入框的边框颜色
+        if not has_directory:
+            self.directory_path.setStyleSheet(self.get_line_edit_style(False))
+        elif path_exists:
+            self.directory_path.setStyleSheet(self.get_line_edit_style(True))
+        else:
+            self.directory_path.setStyleSheet("""
+                QLineEdit {
+                    background-color: white;
+                    color: #2c3e50;
+                    border: 2px solid #e74c3c;
+                    border-radius: 5px;
+                    padding: 6px 12px;
+                    font-size: 14px;
+                }
+            """)
+
+        # 2. 根据路径有效性启用分析按钮
+        self.analyze_btn.setEnabled(path_exists)
+
+        # 3. 更新“选择报告目录”按钮的背景色
+        if path_exists:
+            # 路径有效时背景变为绿色
+            self.select_directory_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #27ae60;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 6px 16px;
+                    font-size: 14px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #27ae60;
+                }
+                QPushButton:pressed {
+                    background-color: #229954;
+                }
+                QPushButton:disabled {
+                    background-color: #bdc3c7;
+                    color: #7f8c8d;
+                }
+            """)
+        else:
+            # 路径无效或空时恢复默认蓝色
+            self.select_directory_btn.setStyleSheet(self.get_button_style())
+  
     def create_directory_selection_area(self):
         """创建目录选择区域"""
         directory_layout = QHBoxLayout()
@@ -158,13 +207,14 @@ class CheckupReportUI(QWidget):
         # 目录路径显示
         self.directory_path = QLineEdit()
         self.directory_path.setPlaceholderText("请选择报告目录...")
-        self.directory_path.setReadOnly(True)
+        self.directory_path.setReadOnly(False)
         self.directory_path.setFixedHeight(36)
         self.directory_path.setStyleSheet(self.get_line_edit_style(False))  # 初始为蓝色边框
         directory_layout.addWidget(self.directory_path, 1)
         
         # 选择目录按钮
         self.select_directory_btn = self.create_button("选择报告目录", 140)
+        self.select_directory_btn.setCheckable(False) 
         directory_layout.addWidget(self.select_directory_btn)
         
         # Android版本选择器

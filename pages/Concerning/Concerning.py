@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-import webbrowser
 import hashlib
 import tempfile
 import zipfile
@@ -13,13 +12,11 @@ from typing import Optional, Dict, Any
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QScrollArea,
     QPushButton, QHBoxLayout, QApplication,
-    QTextEdit, QDialog, QVBoxLayout as QVBoxLayoutDlg,
-    QDialog, QPushButton, QLabel, QHBoxLayout, QVBoxLayout,
-    QDialogButtonBox, QMessageBox
+    QDialog, QMessageBox
 )
-from PyQt6.QtCore import Qt, QUrl, QStandardPaths, QTimer, QPoint
+from PyQt6.QtCore import Qt, QUrl, QStandardPaths, QPoint
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor, QMouseEvent
+from PyQt6.QtGui import QPixmap, QPalette, QBrush, QMouseEvent
 from CustomTitle.titleWindowControlButtons import WindowControlButtons
 
 # ==================== 当前程序版本 ====================
@@ -241,6 +238,10 @@ class Concerning(QWidget):
         if not os.path.exists(self.app_data_dir):
             os.makedirs(self.app_data_dir)
         self.cache_path = os.path.join(self.app_data_dir, CACHE_FILE)
+        self.pending_cleanup_file = os.path.join(self.app_data_dir, "pending_cleanup.txt")  # 待清理临时目录列表
+
+        # 启动时清理上次更新遗留的临时目录
+        self.cleanup_pending_temp()
 
         self.network_manager = QNetworkAccessManager()
         self.network_manager.finished.connect(self.on_update_check_finished)
@@ -255,6 +256,24 @@ class Concerning(QWidget):
 
         self.setup_ui()
         # self.schedule_delete_update_log()
+
+    def cleanup_pending_temp(self):
+        """清理上次更新后遗留的临时目录（在应用启动时调用）"""
+        if not os.path.exists(self.pending_cleanup_file):
+            return
+        try:
+            with open(self.pending_cleanup_file, 'r', encoding='utf-8') as f:
+                paths = [line.strip() for line in f if line.strip()]
+            for path in paths:
+                # 去除可能存在的引号
+                clean_path = path.strip('"')
+                if os.path.exists(clean_path):
+                    shutil.rmtree(clean_path, ignore_errors=True)
+                    print(f"已清理临时目录: {clean_path}")
+            # 清理完成后删除标记文件
+            os.remove(self.pending_cleanup_file)
+        except Exception as e:
+            print(f"清理临时目录时出错: {e}")
 
     # ---------- UI 构建 ----------
     def setup_ui(self):
@@ -577,6 +596,7 @@ class Concerning(QWidget):
         self.perform_update(extract_to)
 
     def _cleanup_temp(self):
+        """立即清理临时目录（用于下载失败等情况）"""
         if self.temp_dir and os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
         self.temp_dir = None
@@ -602,7 +622,7 @@ class Concerning(QWidget):
             with open(script_path, 'w', encoding='utf-8') as f:
                 src = new_files_dir.replace('/', '\\')
                 dst = install_dir.replace('/', '\\')
-                # 为每个保留文件生成带引号的排除参数，确保文件名中的空格和特殊字符被正确处理
+                # 为每个保留文件生成带引号的排除参数
                 exclude_options = ' '.join([f'/XF "{file}"' for file in keep_files])
                 f.write(f"""@echo off
 chcp 65001 >nul
@@ -617,8 +637,8 @@ if not exist "{src}\\*" (
 
 :: 强制结束相关进程
 echo %DATE% %TIME% 强制结束 GMStools.exe 和 adb.exe ... >> "{log_file}" 2>&1
-taskkill /f /im GMStools.exe >> "{log_file}" 2>&1 2>&1
-taskkill /f /im adb.exe >> "{log_file}" 2>&1 2>&1
+taskkill /f /im GMStools.exe >> "{log_file}" 2>&1
+taskkill /f /im adb.exe >> "{log_file}" 2>&1
 timeout /t 2 /nobreak >nul
 
 :: 复制新文件（使用 /E 复制子目录，但不删除多余文件，排除 config.ini）
@@ -667,12 +687,8 @@ tasklist /fi "imagename eq GMStools.exe" >> "{log_file}" 2>&1
 :: 复制日志到安装目录
 copy "{log_file}" "{install_dir}\\update.log" /Y
 
-:: 延迟后清理临时目录
-timeout /t 5 /nobreak >nul
-if exist "{self.temp_dir}" (
-    echo %DATE% %TIME% 清理临时目录: {self.temp_dir} >> "{log_file}" 2>&1
-    rmdir /s /q "{self.temp_dir}" 2>> "{log_file}"
-)
+:: 记录临时目录，留待下次启动时清理（如果文件不存在则自动创建）
+echo "{self.temp_dir}" >> "{self.pending_cleanup_file}"
 
 :: 删除自身
 del "%~f0"
@@ -695,7 +711,7 @@ del "%~f0"
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
         else:
-            # Linux 部分（保持不变）
+            # Linux 部分（保持不变，仅修改删除逻辑）
             log_file = os.path.join(self.temp_dir, "update.log")
             app_log_file = os.path.join(self.temp_dir, "app.log")
             script_path = os.path.join(self.temp_dir, "update.sh")
@@ -762,7 +778,11 @@ fi
 
 cp "{log_file}" "{install_dir}/update.log"
 echo "日志已保存到 {install_dir}/update.log"
-rm -rf "{self.temp_dir}"
+
+# 记录临时目录，留待下次启动时清理
+echo "{self.temp_dir}" >> "{self.pending_cleanup_file}"
+
+# 删除自身
 rm -- "$0"
 """)
             os.chmod(script_path, 0o755)
@@ -774,21 +794,3 @@ rm -- "$0"
                     QApplication.quit()
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
-
-    # # ---------- 自动删除更新日志 ----------
-    # def schedule_delete_update_log(self):
-    #     if getattr(sys, 'frozen', False):
-    #         install_dir = os.path.dirname(sys.executable)
-    #     else:
-    #         install_dir = os.path.dirname(os.path.abspath(__file__))
-    #     log_path = os.path.join(install_dir, "update.log")
-    #     if os.path.exists(log_path):
-    #         print(f"[Concerning] 发现更新日志 {log_path}，1分钟后删除")
-    #         QTimer.singleShot(60000, lambda: self.delete_update_log(log_path))
-
-    # def delete_update_log(self, log_path):
-    #     try:
-    #         os.remove(log_path)
-    #         print(f"[Concerning] 已删除更新日志: {log_path}")
-    #     except Exception as e:
-    #         print(f"[Concerning] 删除更新日志失败: {e}")
