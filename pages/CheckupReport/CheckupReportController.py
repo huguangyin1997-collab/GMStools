@@ -55,7 +55,25 @@ class CheckupReportController:
         if not directory or not os.path.exists(directory):
             QMessageBox.warning(self.ui, "错误", "请选择有效的目录!")
             return
-        
+
+        # ==================== 新增：处理之前的分析线程 ====================
+        if hasattr(self, 'analyzer') and self.analyzer is not None:
+            if self.analyzer.isRunning():
+                # 断开信号连接，避免旧线程触发回调
+                try:
+                    self.analyzer.analysis_finished.disconnect()
+                    self.analyzer.error_occurred.disconnect()
+                except TypeError:
+                    pass
+                # 请求线程退出（对于无事件循环的线程，quit()无效，但可调用wait()等待完成）
+                self.analyzer.quit()
+                if not self.analyzer.wait(2000):  # 等待最多2秒
+                    self.analyzer.terminate()     # 强制终止
+                    self.analyzer.wait()
+                self.analyzer.deleteLater()       # 安排Qt对象删除
+                self.analyzer = None
+        # ==================================================================
+
         # 禁用按钮
         self.ui.set_analysis_state(False)
         

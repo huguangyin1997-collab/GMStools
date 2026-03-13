@@ -2,7 +2,6 @@ import os
 import re
 import datetime
 
-
 # ============================ CV报告分析器 ============================
 
 class CVReportAnalyzer:
@@ -18,6 +17,14 @@ class CVReportAnalyzer:
     
     def analyze_cv_reports(self, pathnames, output_lines, output_error):
         """分析CV报告"""
+        # ========== 新增：清空所有实例列表，防止累积 ==========
+        self.cv_test_result.clear()
+        self.Suite_Plan_comparison.clear()
+        self.Fingerprint_comparison.clear()
+        self.Security_Patch_comparison.clear()
+        self.tool_versions.clear()
+        # ===================================================
+
         cv_status = False
         ReportDelimiter = "=" * 100
         cv_timeout_reports = []

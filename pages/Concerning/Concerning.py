@@ -46,6 +46,7 @@ def compare_versions(v1: str, v2: str) -> int:
 class MikuDialog(QDialog):
     def __init__(self, parent=None, title="提示", message="", buttons=QMessageBox.StandardButton.Ok):
         super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)  # 关闭时自动销毁
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setModal(True)
         self.setMinimumSize(400, 200)
@@ -538,71 +539,84 @@ class Concerning(QWidget):
             self.check_btn.setText(f"下载中 {bytes_received/1024:.0f}KB")
 
     def on_download_finished(self):
-        expected_sha256 = self.expected_sha256
-        if not self.download_reply:
+        reply = self.download_reply
+        if not reply:
             return
 
-        if self.download_reply.error() != QNetworkReply.NetworkError.NoError:
-            QMessageBox.critical(self, "下载失败", f"网络错误：{self.download_reply.errorString()}")
-            self._cleanup_temp()
-            return
-
-        http_status = self.download_reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
-        if http_status != 200:
-            error_data = self.download_reply.readAll().data()
-            error_text = error_data.decode('utf-8', errors='replace')[:500]
-            QMessageBox.critical(self, "下载失败", f"HTTP 状态码 {http_status}，期望 200。\n响应预览：\n{error_text}")
-            self._cleanup_temp()
-            return
-
-        with open(self.download_path, 'wb') as f:
-            f.write(self.download_reply.readAll().data())
-
-        with open(self.download_path, 'rb') as f:
-            header = f.read(2)
-        if header != b'PK':
-            QMessageBox.critical(self, "文件错误", "下载的文件不是有效的 ZIP 格式，可能为 HTML 错误页。")
-            self._cleanup_temp()
-            return
-
-        if expected_sha256:
-            sha256_hash = hashlib.sha256()
-            with open(self.download_path, 'rb') as f:
-                for chunk in iter(lambda: f.read(4096), b''):
-                    sha256_hash.update(chunk)
-            actual_hash = sha256_hash.hexdigest()
-            if actual_hash != expected_sha256:
-                QMessageBox.critical(self, "校验失败", f"文件校验和不匹配！\n期望：{expected_sha256}\n实际：{actual_hash}\n\n更新取消。")
+        # 确保最终释放 reply
+        try:
+            if reply.error() != QNetworkReply.NetworkError.NoError:
+                QMessageBox.critical(self, "下载失败", f"网络错误：{reply.errorString()}")
                 self._cleanup_temp()
                 return
-            else:
-                dlg = MikuDialog(self, "校验成功", "文件完整性验证通过。", QMessageBox.StandardButton.Ok)
-                dlg.exec()
 
-        extract_to = os.path.join(self.temp_dir, "new_version")
-        os.makedirs(extract_to, exist_ok=True)
-        try:
-            with zipfile.ZipFile(self.download_path, 'r') as zip_ref:
-                zip_ref.extractall(extract_to)
-        except Exception as e:
-            QMessageBox.critical(self, "解压失败", f"解压更新包失败：{str(e)}")
-            self._cleanup_temp()
-            return
+            http_status = reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
+            if http_status != 200:
+                error_data = reply.readAll().data()
+                error_text = error_data.decode('utf-8', errors='replace')[:500]
+                QMessageBox.critical(self, "下载失败", f"HTTP 状态码 {http_status}，期望 200。\n响应预览：\n{error_text}")
+                self._cleanup_temp()
+                return
 
-        contents = os.listdir(extract_to)
-        if len(contents) == 1 and os.path.isdir(os.path.join(extract_to, contents[0])):
-            extract_to = os.path.join(extract_to, contents[0])
+            # 保存文件
+            with open(self.download_path, 'wb') as f:
+                f.write(reply.readAll().data())
 
-        self.perform_update(extract_to)
+            # 检查 ZIP 头部
+            with open(self.download_path, 'rb') as f:
+                header = f.read(2)
+            if header != b'PK':
+                QMessageBox.critical(self, "文件错误", "下载的文件不是有效的 ZIP 格式，可能为 HTML 错误页。")
+                self._cleanup_temp()
+                return
+
+            # 校验 SHA256
+            if self.expected_sha256:
+                sha256_hash = hashlib.sha256()
+                with open(self.download_path, 'rb') as f:
+                    for chunk in iter(lambda: f.read(4096), b''):
+                        sha256_hash.update(chunk)
+                actual_hash = sha256_hash.hexdigest()
+                if actual_hash != self.expected_sha256:
+                    QMessageBox.critical(self, "校验失败", f"文件校验和不匹配！\n期望：{self.expected_sha256}\n实际：{actual_hash}\n\n更新取消。")
+                    self._cleanup_temp()
+                    return
+                else:
+                    dlg = MikuDialog(self, "校验成功", "文件完整性验证通过。", QMessageBox.StandardButton.Ok)
+                    dlg.exec()
+
+            # 解压
+            extract_to = os.path.join(self.temp_dir, "new_version")
+            os.makedirs(extract_to, exist_ok=True)
+            try:
+                with zipfile.ZipFile(self.download_path, 'r') as zip_ref:
+                    zip_ref.extractall(extract_to)
+            except Exception as e:
+                QMessageBox.critical(self, "解压失败", f"解压更新包失败：{str(e)}")
+                self._cleanup_temp()
+                return
+
+            contents = os.listdir(extract_to)
+            if len(contents) == 1 and os.path.isdir(os.path.join(extract_to, contents[0])):
+                extract_to = os.path.join(extract_to, contents[0])
+
+            self.perform_update(extract_to)
+
+        finally:
+            # 无论成功或失败，释放 reply 对象
+            reply.deleteLater()
+            self.download_reply = None
 
     def _cleanup_temp(self):
         """立即清理临时目录（用于下载失败等情况）"""
+        if self.download_reply:
+            self.download_reply.deleteLater()
+            self.download_reply = None
         if self.temp_dir and os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
         self.temp_dir = None
         self.download_path = None
         self.expected_sha256 = None
-        self.download_reply = None
 
     # ---------- 核心更新逻辑（最终版：隐藏窗口，只复制/更新，不删除其他文件，保留 config.ini）----------
     def perform_update(self, new_files_dir):
