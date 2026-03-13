@@ -352,3 +352,8 @@ class MainWindow(QWidget):
         cursor = self.status_text.textCursor()
         cursor.movePosition(cursor.MoveOperation.End)
         self.status_text.setTextCursor(cursor)
+
+    def closeEvent(self, event):
+        """窗口直接关闭，不进行任何ADB清理"""
+        print("窗口关闭，程序退出")
+        event.accept()

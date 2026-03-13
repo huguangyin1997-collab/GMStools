@@ -6,6 +6,7 @@ import tempfile
 import zipfile
 import subprocess
 import shutil
+import time  # 新增，用于重试等待
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
@@ -20,7 +21,7 @@ from PyQt6.QtGui import QPixmap, QPalette, QBrush, QMouseEvent
 from CustomTitle.titleWindowControlButtons import WindowControlButtons
 
 # ==================== 当前程序版本 ====================
-APP_VERSION = "1.2.14"
+APP_VERSION = "1.2.16"
 
 # GitHub API 地址（最新 Release）
 GITHUB_API_URL = "https://api.github.com/repos/huguangyin1997-collab/GMStools/releases/latest"
@@ -259,18 +260,28 @@ class Concerning(QWidget):
         # self.schedule_delete_update_log()
 
     def cleanup_pending_temp(self):
-        """清理上次更新后遗留的临时目录（在应用启动时调用）"""
+        """清理上次更新后遗留的临时目录（在应用启动时调用），增加重试机制"""
         if not os.path.exists(self.pending_cleanup_file):
             return
         try:
             with open(self.pending_cleanup_file, 'r', encoding='utf-8') as f:
                 paths = [line.strip() for line in f if line.strip()]
             for path in paths:
-                # 去除可能存在的引号
                 clean_path = path.strip('"')
                 if os.path.exists(clean_path):
-                    shutil.rmtree(clean_path, ignore_errors=True)
-                    print(f"已清理临时目录: {clean_path}")
+                    # 尝试多次删除
+                    for attempt in range(3):
+                        try:
+                            shutil.rmtree(clean_path, ignore_errors=False)
+                            print(f"已清理临时目录: {clean_path}")
+                            break
+                        except Exception as e:
+                            if attempt == 2:
+                                print(f"清理临时目录失败（尝试3次）: {clean_path}，错误: {e}")
+                                # 最后一次尝试，强制忽略错误
+                                shutil.rmtree(clean_path, ignore_errors=True)
+                            else:
+                                time.sleep(0.5)  # 等待一会再试
             # 清理完成后删除标记文件
             os.remove(self.pending_cleanup_file)
         except Exception as e:
@@ -538,6 +549,34 @@ class Concerning(QWidget):
         else:
             self.check_btn.setText(f"下载中 {bytes_received/1024:.0f}KB")
 
+    def _reset_check_button(self):
+        """恢复检查更新按钮到初始状态"""
+        self.check_btn.setEnabled(True)
+        self.check_btn.setText("检查更新")
+
+    def _cleanup_temp(self):
+        """立即清理临时目录（用于下载失败等情况），增加重试机制"""
+        if self.download_reply:
+            self.download_reply.deleteLater()
+            self.download_reply = None
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            # 尝试多次删除，避免文件被暂时锁定
+            for attempt in range(3):
+                try:
+                    shutil.rmtree(self.temp_dir, ignore_errors=False)
+                    print(f"临时目录清理成功: {self.temp_dir}")
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        print(f"临时目录清理失败（尝试3次）: {self.temp_dir}，错误: {e}")
+                        # 最后一次尝试，强制忽略错误
+                        shutil.rmtree(self.temp_dir, ignore_errors=True)
+                    else:
+                        time.sleep(0.5)  # 等待一会再试
+        self.temp_dir = None
+        self.download_path = None
+        self.expected_sha256 = None
+
     def on_download_finished(self):
         reply = self.download_reply
         if not reply:
@@ -548,6 +587,7 @@ class Concerning(QWidget):
             if reply.error() != QNetworkReply.NetworkError.NoError:
                 QMessageBox.critical(self, "下载失败", f"网络错误：{reply.errorString()}")
                 self._cleanup_temp()
+                self._reset_check_button()
                 return
 
             http_status = reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
@@ -556,6 +596,7 @@ class Concerning(QWidget):
                 error_text = error_data.decode('utf-8', errors='replace')[:500]
                 QMessageBox.critical(self, "下载失败", f"HTTP 状态码 {http_status}，期望 200。\n响应预览：\n{error_text}")
                 self._cleanup_temp()
+                self._reset_check_button()
                 return
 
             # 保存文件
@@ -568,6 +609,7 @@ class Concerning(QWidget):
             if header != b'PK':
                 QMessageBox.critical(self, "文件错误", "下载的文件不是有效的 ZIP 格式，可能为 HTML 错误页。")
                 self._cleanup_temp()
+                self._reset_check_button()
                 return
 
             # 校验 SHA256
@@ -580,6 +622,7 @@ class Concerning(QWidget):
                 if actual_hash != self.expected_sha256:
                     QMessageBox.critical(self, "校验失败", f"文件校验和不匹配！\n期望：{self.expected_sha256}\n实际：{actual_hash}\n\n更新取消。")
                     self._cleanup_temp()
+                    self._reset_check_button()
                     return
                 else:
                     dlg = MikuDialog(self, "校验成功", "文件完整性验证通过。", QMessageBox.StandardButton.Ok)
@@ -594,6 +637,7 @@ class Concerning(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "解压失败", f"解压更新包失败：{str(e)}")
                 self._cleanup_temp()
+                self._reset_check_button()
                 return
 
             contents = os.listdir(extract_to)
@@ -606,17 +650,6 @@ class Concerning(QWidget):
             # 无论成功或失败，释放 reply 对象
             reply.deleteLater()
             self.download_reply = None
-
-    def _cleanup_temp(self):
-        """立即清理临时目录（用于下载失败等情况）"""
-        if self.download_reply:
-            self.download_reply.deleteLater()
-            self.download_reply = None
-        if self.temp_dir and os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
-        self.temp_dir = None
-        self.download_path = None
-        self.expected_sha256 = None
 
     # ---------- 核心更新逻辑（最终版：隐藏窗口，只复制/更新，不删除其他文件，保留 config.ini）----------
     def perform_update(self, new_files_dir):
@@ -724,6 +757,8 @@ del "%~f0"
                     QApplication.quit()
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
+                self._cleanup_temp()  # 清理临时目录
+                self._reset_check_button()
         else:
             # Linux 部分（保持不变，仅修改删除逻辑）
             log_file = os.path.join(self.temp_dir, "update.log")
@@ -808,3 +843,5 @@ rm -- "$0"
                     QApplication.quit()
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"启动更新脚本失败：{str(e)}")
+                self._cleanup_temp()  # 清理临时目录
+                self._reset_check_button()

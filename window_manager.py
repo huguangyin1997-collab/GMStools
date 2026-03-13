@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout
 from PyQt6.QtCore import Qt, QTimer, QSettings
-from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor
+from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor, QIcon
 
 from CustomTitle import CustomTitleBar
 from PageManager import PageManager
@@ -21,17 +21,20 @@ class WindowManager(QMainWindow):
         # 立即设置临时背景色，避免白色闪现
         self.setAutoFillBackground(True)
         palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, QColor(44, 62, 80))  # 深灰蓝
+        palette.setColor(QPalette.ColorRole.Window, QColor(44, 62, 80))
         self.setPalette(palette)
 
         self.setup_ui()
+
+        # 设置窗口图标（仅一次）
+        self.setWindowIconFromFile()
 
         if self.disclaimer_already_accepted:
             self.on_disclaimer_agreed(skip_save=True)
         else:
             self.connect_disclaimer_signals()
 
-        # 延迟加载背景图片和完整初始化
+        # 延迟加载背景图片和完整初始化，不阻塞界面显示
         QTimer.singleShot(0, self._complete_initialization)
 
     def get_resource_path(self, relative_path):
@@ -40,6 +43,14 @@ class WindowManager(QMainWindow):
         except Exception:
             base_path = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(base_path, relative_path)
+
+    def setWindowIconFromFile(self):
+        icon_path = self.get_resource_path("app.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+            print(f"窗口图标已设置: {icon_path}")
+        else:
+            print("警告: 未找到窗口图标文件 app.ico")
 
     def setup_background(self):
         image_path = self.get_resource_path("Miku.jpg")
@@ -94,7 +105,6 @@ class WindowManager(QMainWindow):
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
-        # 创建 PageManager，传入 content_widget 作为父对象
         self.page_manager = PageManager(parent_widget=content_widget)
 
         if not self.disclaimer_already_accepted:
@@ -110,7 +120,6 @@ class WindowManager(QMainWindow):
         content_layout.addWidget(self.page_manager.stacked_widget)
 
     def _complete_initialization(self):
-        """延迟执行的完整初始化：加载背景图片（覆盖临时背景）"""
         self.setup_background()
 
     def connect_disclaimer_signals(self):
@@ -152,6 +161,9 @@ class WindowManager(QMainWindow):
     def showEvent(self, event):
         super().showEvent(event)
         self.update_background()
+        # 移除延迟图标设置，因为已在 __init__ 中设置一次
 
     def closeEvent(self, event):
+        """窗口直接关闭，不进行任何ADB清理"""
+        print("closeEvent 触发，程序即将退出")
         event.accept()
