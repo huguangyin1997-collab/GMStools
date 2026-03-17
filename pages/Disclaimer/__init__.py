@@ -1,3 +1,3 @@
 from .Disclaimer import Disclaimer
-
-__all__ = ['Disclaimer']
+from ..Concerning import MikuDialog 
+__all__ = ['Disclaimer','MikuDialog']
