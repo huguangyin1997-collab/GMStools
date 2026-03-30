@@ -43,7 +43,7 @@ class SMR_Analyzer:
             smr_security_patch = self.info_extractor.extract_security_patch(smr_dir)
             
             # 获取详细的验证结果
-            strict_result = self.patch_checker.compare_patches(
+            strict_patch_result = self.patch_checker.compare_patches(
                 mr_security_patch, smr_security_patch
             )
             
@@ -61,16 +61,16 @@ class SMR_Analyzer:
                 "SMR报告", smr_dir, "SMR", smr_security_patch, smr_generic_info
             )
             
-            # 执行对比分析
-            comparison_text, all_check_results = self._perform_comparison_analysis(
+            # 执行对比分析，返回三个值：对比文本、所有检查结果、警告字典
+            comparison_text, all_check_results, warnings_dict = self._perform_comparison_analysis(
                 mr_dir, smr_dir, 
                 mr_security_patch, smr_security_patch,
                 mr_fingerprint, smr_generic_info,
-                strict_result
+                strict_patch_result
             )
             
-            # 生成最终综合判定结果 - 只生成一次，专门用于错误信息区域
-            final_verdict_text = self._add_final_comprehensive_verdict(strict_result, all_check_results)
+            # 生成最终综合判定结果
+            final_verdict_text = self._add_final_comprehensive_verdict(strict_patch_result, all_check_results, warnings_dict)
             
             # 创建完整的分析日志（不包含final_verdict_text，只包含分析过程的详细信息）
             complete_log = f"分析开始时间: {current_time}\n"
@@ -81,7 +81,6 @@ class SMR_Analyzer:
             complete_log += f"\n分析完成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             
             # 将最终判定结果返回到错误信息区域
-            # 完整日志返回到分析结果区域（不包含final_verdict_text）
             return complete_log, final_verdict_text
             
         except Exception as e:
@@ -95,9 +94,12 @@ class SMR_Analyzer:
     def _perform_comparison_analysis(self, mr_dir, smr_dir, mr_security_patch, 
                                     smr_security_patch, mr_fingerprint, smr_generic_info,
                                     strict_patch_result):
-        """执行对比分析，返回分析文本和所有检查结果"""
+        """执行对比分析，返回分析文本、所有检查结果和警告字典"""
         result_text = "对比分析结果:\n"
         result_text += "-" * 30 + "\n"
+        
+        # 初始化警告字典
+        warnings_dict = {}
         
         # 安全补丁对比 - 使用严格验证结果
         security_patch_result = "PASS" if strict_patch_result['all_checks_passed'] else "FAIL"
@@ -107,10 +109,26 @@ class SMR_Analyzer:
         result_text += f"  参考时间: {self.patch_checker.reference_time.strftime('%Y-%m-%d %H:%M:%S')} ({self.patch_checker.time_message})\n"
         
         if strict_patch_result['all_checks_passed']:
-            result_text += "  ✅ PASS: 所有安全补丁检查通过\n"
+            if strict_patch_result.get('has_warning', False):
+                # 收集警告信息
+                warning_msg = ""
+                if strict_patch_result['smr'].get('warning'):
+                    warning_msg = strict_patch_result['smr']['message']
+                elif strict_patch_result['mr'].get('warning'):
+                    warning_msg = strict_patch_result['mr']['message']
+                else:
+                    warning_msg = "安全补丁存在警告（超过30天但未超过40天）"
+                warnings_dict["安全补丁"] = warning_msg
+                
+                result_text += "  ⚠️ PASS with warning: 安全补丁检查通过但存在警告（请查看详细信息）\n"
+                if strict_patch_result['smr'].get('warning'):
+                    result_text += f"      SMR警告: {strict_patch_result['smr']['message']}\n"
+                if strict_patch_result['mr'].get('warning'):
+                    result_text += f"      MR警告: {strict_patch_result['mr']['message']}\n"
+            else:
+                result_text += "  ✅ PASS: 所有安全补丁检查通过\n"
         else:
             result_text += "  ❌ FAIL: 安全补丁检查未通过\n"
-            
             # 显示失败原因
             fail_reasons = []
             if not strict_patch_result['mr']['is_valid']:
@@ -119,7 +137,6 @@ class SMR_Analyzer:
                 fail_reasons.append(f"SMR: {strict_patch_result['smr']['message']}")
             if not strict_patch_result['comparison']['is_valid']:
                 fail_reasons.append(f"对比: {strict_patch_result['comparison']['message']}")
-            
             if fail_reasons:
                 result_text += "    失败原因:\n"
                 for reason in fail_reasons:
@@ -148,15 +165,12 @@ class SMR_Analyzer:
         
         mainline_result = "PASS"
         if mr_mainline_info["type"] != smr_mainline_info["type"]:
-            # 类型不一致（一个是GO，一个是non-GO）
             mainline_result = "FAIL"
             mainline_message = f"类型不一致: MR是{mr_mainline_info['type']}，SMR是{smr_mainline_info['type']}"
         elif mr_mainline_info["version"] != smr_mainline_info["version"]:
-            # 版本不一致
             mainline_result = "FAIL"
             mainline_message = f"版本不一致: MR={mr_mainline_info['version']}，SMR={smr_mainline_info['version']}"
         elif mr_mainline_info["version"] == "未找到" or smr_mainline_info["version"] == "未找到":
-            # 未找到版本信息
             mainline_result = "FAIL"
             mainline_message = "未找到Mainline版本信息"
         else:
@@ -220,68 +234,56 @@ class SMR_Analyzer:
         all_check_results["Feature DeviceInfo"] = feature_result_status
         all_check_results["Package DeviceInfo"] = package_result_status
         
-        return result_text, all_check_results
+        return result_text, all_check_results, warnings_dict
     
-    def _add_final_comprehensive_verdict(self, strict_patch_result, all_check_results=None):
+    def _add_final_comprehensive_verdict(self, strict_patch_result, all_check_results=None, warnings_dict=None):
         """添加最终综合判定结果（按照要求的格式）"""
+        if warnings_dict is None:
+            warnings_dict = {}
+            
         result = "=" * 50 + "\n"
         result += "最终综合判定结果: "
         
         # 判断是否能走SMR
         can_pass_smr = True
         
-        # 收集所有失败原因
-        all_fail_reasons = []
-        
         # 1. 检查安全补丁
         if not strict_patch_result['all_checks_passed']:
             can_pass_smr = False
-            all_fail_reasons.append("安全补丁检查失败")
         
         # 2. 检查其他检查项
         if all_check_results:
-            for check_name, check_result in all_check_results.items():
+            for check_result in all_check_results.values():
                 if check_result == "FAIL":
                     can_pass_smr = False
-                    # 根据检查项名称添加具体的失败原因
-                    if "Fingerprint" in check_name:
-                        all_fail_reasons.append("Base_OS Fingerprint不一致")
-                    elif "Package" in check_name and "DeviceInfo" in check_name:
-                        all_fail_reasons.append("Package DeviceInfo有不允许的变更")
-                    elif "GMS" in check_name:
-                        all_fail_reasons.append("GMS包版本不一致")
-                    elif "Mainline" in check_name:
-                        all_fail_reasons.append("Mainline版本不一致")
-                    elif "Feature" in check_name and "DeviceInfo" in check_name:
-                        all_fail_reasons.append("Feature DeviceInfo不一致")
+                    break
         
         # 输出判定结果
         if can_pass_smr:
-            result += "✅ 能走smr\n"
+            if warnings_dict:
+                result += "⚠️ 能走smr（存在警告项）\n"
+            else:
+                result += "✅ 能走smr\n"
         else:
             result += "❌ 不能走smr\n"
         
         result += "=" * 50 + "\n"
         
-        # 3. 汇总所有失败原因（只有在不能走SMR时才显示）
-        # if not can_pass_smr and all_fail_reasons:
-        #     unique_fail_reasons = list(set(all_fail_reasons))
-        #     result += "📋 所有失败原因汇总:\n"
-        #     for i, reason in enumerate(unique_fail_reasons, 1):
-        #         result += f"   {i}. {reason}\n"
-        #     result += "\n"  # 添加空行分隔
-        
-        # 4. 显示所有检查项结果
+        # 显示所有检查项结果
         result += "所有检查项结果:\n"
         result += "=" * 50 + "\n"
         
-        # 安全补丁检查结果
+        # 安全补丁检查结果（带警告处理）
         if strict_patch_result['all_checks_passed']:
-            result += "✅ 安全补丁: PASS\n"
+            if strict_patch_result.get('has_warning', False):
+                warning_msg = warnings_dict.get("安全补丁", "存在警告")
+                result += f"⚠️ 安全补丁: PASS ({warning_msg})\n"
+            else:
+                result += "✅ 安全补丁: PASS\n"
         else:
             result += "❌ 安全补丁: FAIL\n"
         
-        # 其他检查项结果（all_check_results中不包含安全补丁）
+        # 其他检查项结果
         if all_check_results:
             # 按特定顺序显示检查项
             display_order = [
@@ -297,24 +299,32 @@ class SMR_Analyzer:
             for check_name in display_order:
                 if check_name in all_check_results:
                     check_result = all_check_results[check_name]
-                    if check_result == "PASS":
-                        result += f"✅ {check_name}: PASS\n"
-                    elif check_result == "FAIL":
-                        result += f"❌ {check_name}: FAIL\n"
+                    # 检查是否有警告（目前只有安全补丁有，其他项可扩展）
+                    warning_msg = warnings_dict.get(check_name, "")
+                    if warning_msg:
+                        result += f"⚠️ {check_name}: {check_result} ({warning_msg})\n"
+                    else:
+                        if check_result == "PASS":
+                            result += f"✅ {check_name}: PASS\n"
+                        elif check_result == "FAIL":
+                            result += f"❌ {check_name}: FAIL\n"
                     processed_checks.add(check_name)
             
             # 显示其他未在指定顺序中的检查项
             for check_name, check_result in all_check_results.items():
                 if check_name not in processed_checks:
-                    if check_result == "PASS":
-                        result += f"✅ {check_name}: PASS\n"
-                    elif check_result == "FAIL":
-                        result += f"❌ {check_name}: FAIL\n"
+                    warning_msg = warnings_dict.get(check_name, "")
+                    if warning_msg:
+                        result += f"⚠️ {check_name}: {check_result} ({warning_msg})\n"
+                    else:
+                        if check_result == "PASS":
+                            result += f"✅ {check_name}: PASS\n"
+                        elif check_result == "FAIL":
+                            result += f"❌ {check_name}: FAIL\n"
         
         result += "=" * 50
-        
         return result
-   
+    
     def _compare_feature_files(self, mr_feature_file, smr_feature_file):
         """对比Feature文件"""
         feature_result_status = "未知"

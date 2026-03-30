@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QHBoxLayout, QLineEdit, QPushButton, QFileDialog
+from PyQt6.QtCore import Qt
 import os
 
 from .ui_styles import UIStyles
@@ -26,7 +27,20 @@ class DirectoryManager:
         self.directory_line.setFixedHeight(36)
         self.directory_line.setPlaceholderText("请选择数据库文件或目录...")
         self.directory_line.setReadOnly(False)
-        self.directory_line.setStyleSheet(self.ui_styles.get_line_edit_style(False))
+        # 设置基础样式（包含内边距，用于解决遮挡问题）
+        self.directory_line.setStyleSheet("""
+            QLineEdit {
+                padding: 4px 8px;
+                font-size: 14px;
+                border: 2px solid #3498db;
+                border-radius: 4px;
+                background-color: white;
+                color: black;
+            }
+        """)
+        
+        # 设置文字左对齐（从左到右排列）
+        self.directory_line.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # 仅连接编辑完成信号
         self.directory_line.editingFinished.connect(self.on_editing_finished)
@@ -48,6 +62,7 @@ class DirectoryManager:
         directory_layout.addWidget(self.select_directory_btn)
         layout.addLayout(directory_layout)
 
+    # 以下方法保持原样，仅修改 set_directory_ui_color 中的样式以保持一致性
     def on_editing_finished(self):
         """编辑完成（回车或失去焦点）时更新颜色并输出日志（去重）"""
         path = self.directory_line.text().strip()
@@ -115,8 +130,25 @@ class DirectoryManager:
         self.last_logged_path = path   # 记录，避免手动编辑后重复输出
 
     def set_directory_ui_color(self):
-        """根据当前类型设置按钮颜色"""
-        self.directory_line.setStyleSheet(self.ui_styles.get_line_edit_style(True))
+        """根据当前类型设置按钮颜色（并保持输入框样式）"""
+        # 根据是否选中路径，动态修改边框颜色（内边距已固定为 4px 8px）
+        if self.current_selection_type in ('file', 'directory'):
+            border_color = "#27ae60"  # 绿色（有效路径）
+        else:
+            border_color = "#3498db"  # 蓝色（无效或未选）
+        
+        self.directory_line.setStyleSheet(f"""
+            QLineEdit {{
+                padding: 4px 8px;
+                font-size: 14px;
+                border: 2px solid {border_color};
+                border-radius: 4px;
+                background-color: white;
+                color: black;
+            }}
+        """)
+        
+        # 按钮颜色变化保持不变
         if self.current_selection_type == 'file':
             self.select_file_btn.setStyleSheet(self.ui_styles.get_button_style(True))
             self.select_directory_btn.setStyleSheet(self.ui_styles.get_button_style(False))

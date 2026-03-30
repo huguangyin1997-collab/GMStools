@@ -1,5 +1,9 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QComboBox, QHBoxLayout, QPushButton, QMessageBox, QTextEdit, QLabel, QSizePolicy, QFileDialog
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QFileDialog,
+    QMessageBox, QTextEdit, QLabel, QSizePolicy, QListWidget, QListWidgetItem
+)
+from PyQt6.QtCore import Qt, QTimer, QEvent
+from PyQt6.QtGui import QPainter, QBrush, QColor, QPen
 import os
 
 from .device_manager import DeviceManager
@@ -17,6 +21,7 @@ class MainWindow(QWidget):
         self.ui_styles = UIStyles()
         self.directory_manager = DirectoryManager(self)
         self.operation_handler = OperationHandler(self.device_manager, self.directory_manager)
+        self.devices = []  # 存储设备列表
         self.setup_ui()
         
         QTimer.singleShot(0, self.delayed_adb_check)
@@ -40,10 +45,26 @@ class MainWindow(QWidget):
         device_layout = QHBoxLayout()
         device_layout.setSpacing(6)
         
-        self.device_combo = QComboBox()
-        self.device_combo.setFixedHeight(36)
-        self.device_combo.setStyleSheet(self.ui_styles.get_combo_style(False))
-        self.device_combo.currentTextChanged.connect(self.on_device_changed)
+        self.device_btn = QPushButton("未选择设备")
+        self.device_btn.setFixedHeight(36)
+        self.device_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(255, 255, 255, 180);
+                border: 1px solid rgba(0, 0, 0, 80);
+                padding: 5px 12px;
+                color: #333;
+                font-size: 14px;
+                border-radius: 0px;
+                text-align: left;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 200);
+            }
+            QPushButton:pressed {
+                background-color: rgba(240, 240, 240, 200);
+            }
+        """)
+        self.device_btn.clicked.connect(self.show_device_list)
         
         self.refresh_btn = QPushButton("刷新设备")
         self.refresh_btn.setFixedSize(140, 36)
@@ -55,7 +76,7 @@ class MainWindow(QWidget):
         self.clear_log_btn.setStyleSheet(self.ui_styles.get_button_style(False))
         self.clear_log_btn.clicked.connect(self.clear_status_messages)
         
-        device_layout.addWidget(self.device_combo)
+        device_layout.addWidget(self.device_btn)
         device_layout.addWidget(self.refresh_btn)
         device_layout.addWidget(self.clear_log_btn)
         layout.addLayout(device_layout)
@@ -121,6 +142,7 @@ class MainWindow(QWidget):
         info_label.setText("• 导出：从设备导出CTS Verifier测试数据库<br>• 导入：将数据库文件导入到设备")
         layout.addWidget(info_label)
         
+    # ---------- 设备管理 ----------
     def on_refresh_clicked(self):
         self.refresh_btn.setStyleSheet(self.ui_styles.get_button_style(True))
         self.export_btn.setStyleSheet(self.ui_styles.get_action_button_style(False))
@@ -136,42 +158,147 @@ class MainWindow(QWidget):
         self.status_text.setStyleSheet(self.ui_styles.get_status_text_style(False))
     
     def refresh_device_list(self):
-        self.clear_log_btn.setStyleSheet(self.ui_styles.get_button_style(False))
-        devices = self.device_manager.get_adb_devices()
-        
-        current_text = self.device_combo.currentText()
-        self.device_combo.clear()
-        
-        if not devices:
-            self.device_combo.addItem("未检测到设备")
-            self.set_ui_color(False)
-            self.add_status_message("未检测到设备")
-            return
-        
-        if len(devices) == 1:
-            device_id = devices[0]
-            self.device_combo.addItem(device_id)
-            self.device_combo.setCurrentIndex(0)
-            self.set_ui_color(True)
-            self.add_status_message(f"单台设备，已自动选择: {device_id}")
-        else:
-            self.device_combo.addItem("请选择设备...")
-            for device in devices:
-                self.device_combo.addItem(device)
-            self.device_combo.setCurrentIndex(0)
-            self.set_ui_color(False)
-            self.add_status_message(f"多台设备，需要用户选择: {', '.join(devices)}")
-    
-    def on_device_changed(self, device_text):
-        if not device_text or device_text in ("未检测到设备", "请选择设备..."):
-            self.set_ui_color(False)
-        else:
-            self.set_ui_color(True)
-            self.add_status_message(f"设备已切换至: {device_text}")
+        try:
+            devices = self.device_manager.get_adb_devices()
+            self.devices = devices
+            if not devices:
+                self.device_btn.setText("未检测到设备")
+                self.set_ui_color(False)
+                self.add_status_message("未检测到设备")
+                return
+            if len(devices) == 1:
+                self.device_btn.setText(devices[0])
+                self.set_ui_color(True)
+                self.add_status_message(f"单台设备，已自动选择: {devices[0]}")
+            else:
+                self.device_btn.setText("请选择设备...")
+                self.set_ui_color(False)
+                self.add_status_message(f"多台设备，需要用户选择: {', '.join(devices)}")
+        except Exception as e:
+            self.add_status_message(f"刷新设备列表失败: {e}")
     
     def set_ui_color(self, is_selected):
-        self.device_combo.setStyleSheet(self.ui_styles.get_combo_style(is_selected))
+        """根据是否有有效设备设置按钮样式"""
+        if is_selected:
+            self.device_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(255, 255, 255, 180);
+                    border: 1px solid #27ae60;
+                    padding: 5px 12px;
+                    color: #333;
+                    font-size: 14px;
+                    border-radius: 0px;
+                    text-align: left;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 200);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(240, 240, 240, 200);
+                }
+            """)
+        else:
+            self.device_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(255, 255, 255, 180);
+                    border: 1px solid rgba(0, 0, 0, 80);
+                    padding: 5px 12px;
+                    color: #333;
+                    font-size: 14px;
+                    border-radius: 0px;
+                    text-align: left;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 200);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(240, 240, 240, 200);
+                }
+            """)
     
+    def show_device_list(self):
+        """自定义下拉列表，替代 QMenu，实现无滚动条但可滚轮滚动，背景半透白"""
+        if not hasattr(self, 'devices') or not self.devices:
+            return
+
+        # 定义内部 Popup 类，用于自定义绘制半透白背景
+        class Popup(QWidget):
+            def __init__(self, parent=None):
+                super().__init__(parent, Qt.WindowType.Popup)
+                self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+                self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+            def paintEvent(self, event):
+                painter = QPainter(self)
+                painter.setBrush(QBrush(QColor(255, 255, 255, 180)))
+                painter.setPen(QPen(QColor(0, 0, 0, 80), 1))
+                painter.drawRect(self.rect())
+
+        popup = Popup(self)
+
+        layout = QVBoxLayout(popup)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # 列表控件：滚动条完全隐藏，但滚轮可用
+        list_widget = QListWidget()
+        list_widget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_widget.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        list_widget.setMouseTracking(True)
+
+        list_widget.setStyleSheet("""
+            QListWidget {
+                background-color: transparent;
+                border: none;
+                outline: none;
+            }
+            QListWidget::item {
+                padding: 6px 12px;
+                min-height: 30px;
+                color: #333;
+            }
+            QListWidget::item:selected {
+                background-color: rgba(224, 224, 224, 200);
+            }
+            QListWidget::item:hover {
+                background-color: rgba(224, 224, 224, 150);
+            }
+        """)
+
+        for device in self.devices:
+            item = QListWidgetItem(device)
+            list_widget.addItem(item)
+
+        def on_item_clicked(item):
+            self.on_device_selected(item.text())
+            popup.close()
+
+        list_widget.itemClicked.connect(on_item_clicked)
+        layout.addWidget(list_widget)
+
+        popup.setFixedWidth(self.device_btn.width())
+        pos = self.device_btn.mapToGlobal(self.device_btn.rect().bottomLeft())
+        popup.move(pos)
+
+        # 高度改为 126px
+        popup.setMaximumHeight(84)
+        item_height = list_widget.sizeHintForRow(0)
+        list_widget.setFixedHeight(min(item_height * list_widget.count(), 84))
+
+        popup.show()
+        popup.activateWindow()
+        list_widget.setFocus()
+
+        self.device_popup = popup
+        popup.installEventFilter(self)
+
+    def on_device_selected(self, device_text):
+        """设备选择回调"""
+        self.device_btn.setText(device_text)
+        self.set_ui_color(True)
+        self.add_status_message(f"设备已切换至: {device_text}")
+
     def show_adb_error(self, message):
         error_msg = QMessageBox()
         error_msg.setIcon(QMessageBox.Icon.Critical)
@@ -180,11 +307,35 @@ class MainWindow(QWidget):
         error_msg.setInformativeText("请确保已安装Android SDK并配置ADB环境变量")
         error_msg.exec()
         
-        self.device_combo.clear()
-        self.device_combo.addItem("ADB环境异常")
+        self.device_btn.setText("ADB环境异常")
         self.set_ui_color(False)
         self.add_status_message("ADB环境异常: " + message)
     
+    def get_selected_device(self):
+        current_text = self.device_btn.text()
+        if current_text and current_text not in ("未检测到设备", "请选择设备...", "ADB环境异常"):
+            return current_text
+        return None
+    
+    def add_status_message(self, message):
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        formatted_message = f"[{timestamp}] {message}"
+        
+        current_text = self.status_text.toPlainText()
+        if current_text == "操作日志将显示在这里...\n\n":
+            current_text = formatted_message
+        else:
+            current_text += f"\n{formatted_message}"
+        
+        self.status_text.setPlainText(current_text)
+        self.status_text.setStyleSheet(self.ui_styles.get_status_text_style(True))
+        
+        cursor = self.status_text.textCursor()
+        cursor.movePosition(cursor.MoveOperation.End)
+        self.status_text.setTextCursor(cursor)
+    
+    # ---------- 操作方法 ----------
     def start_import(self):
         self.refresh_btn.setStyleSheet(self.ui_styles.get_button_style(False))
         self.clear_log_btn.setStyleSheet(self.ui_styles.get_button_style(False))
@@ -246,33 +397,8 @@ class MainWindow(QWidget):
             self.add_status_message(f"导出失败: {result_message}")
             self.export_btn.setStyleSheet(self.ui_styles.get_action_button_style(False))
     
-    def get_selected_device(self):
-        current_text = self.device_combo.currentText()
-        if current_text and current_text not in ("未检测到设备", "请选择设备...", "ADB环境异常"):
-            return current_text
-        return None
-    
-    def add_status_message(self, message):
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        formatted_message = f"[{timestamp}] {message}"
-        
-        current_text = self.status_text.toPlainText()
-        if current_text == "操作日志将显示在这里...\n\n":
-            current_text = formatted_message
-        else:
-            current_text += f"\n{formatted_message}"
-        
-        self.status_text.setPlainText(current_text)
-        self.status_text.setStyleSheet(self.ui_styles.get_status_text_style(True))
-        
-        cursor = self.status_text.textCursor()
-        cursor.movePosition(cursor.MoveOperation.End)
-        self.status_text.setTextCursor(cursor)
-    
-    # ========== 额外按钮功能（纯本地操作） ==========
+    # ---------- 额外按钮功能 ----------
     def on_export_info_clicked(self):
-        """导出数据库信息：从本地 .db 文件导出 db_new.xls（覆盖，不备份）"""
         self.export_info_btn.setStyleSheet(self.ui_styles.get_action_button_style(True))
         try:
             path = self.directory_manager.get_selected_path()
@@ -289,7 +415,6 @@ class MainWindow(QWidget):
             base_dir = os.path.dirname(path)
             new_excel = os.path.join(base_dir, "db_new.xls")
 
-            # 如果已存在，直接删除
             if os.path.isfile(new_excel):
                 os.remove(new_excel)
                 self.add_status_message("已删除旧的 db_new.xls")
@@ -303,8 +428,8 @@ class MainWindow(QWidget):
         finally:
             QTimer.singleShot(1000, lambda: self.export_info_btn.setStyleSheet(
                 self.ui_styles.get_action_button_style(False)))
+    
     def on_import_info_clicked(self):
-        """导入数据库信息：自动使用 db_new.xlsx 对比更新数据库（无弹框）"""
         self.import_info_btn.setStyleSheet(self.ui_styles.get_action_button_style(True))
         try:
             db_path = self.directory_manager.get_selected_path()
@@ -345,5 +470,15 @@ class MainWindow(QWidget):
         finally:
             QTimer.singleShot(1000, lambda: self.import_info_btn.setStyleSheet(
                 self.ui_styles.get_action_button_style(False)))
+    
+    # ---------- 事件过滤器 ----------
+    def eventFilter(self, obj, event):
+        """用于关闭弹出窗口（点击外部）"""
+        if hasattr(self, 'device_popup') and obj is self.device_popup:
+            if event.type() == QEvent.Type.WindowDeactivate:
+                self.device_popup.close()
+                return True
+        return super().eventFilter(obj, event)
+    
     def closeEvent(self, event):
         print("窗口关闭，程序退出")

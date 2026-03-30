@@ -65,12 +65,13 @@ class UIStyles:
             """
     
     def get_button_style(self, is_selected=False):
-        """获取按钮样式"""
+        """获取按钮样式（刷新设备、清除记录、选择文件、选择目录等）"""
         if is_selected:
             return """
                 QPushButton {
                     padding: 8px 15px;
-                    font-size: 14px;
+                    font-size: 16px;
+                    font-weight: bold;
                     border: 2px solid #27ae60;
                     border-radius: 4px;
                     background-color: #27ae60;
@@ -87,7 +88,8 @@ class UIStyles:
             return """
                 QPushButton {
                     padding: 8px 15px;
-                    font-size: 14px;
+                    font-size: 16px;
+                    font-weight: bold;
                     border: 2px solid #3498db;
                     border-radius: 4px;
                     background-color: #3498db;
@@ -102,7 +104,7 @@ class UIStyles:
             """
     
     def get_action_button_style(self, is_selected=False):
-        """获取操作按钮样式"""
+        """获取操作按钮样式（开始导出、开始导入等）"""
         if is_selected:
             return """
                 QPushButton {

@@ -6,8 +6,38 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 
-# 使用相对导入导入 MikuDialog（必须在包内运行）
-from ..Concerning import MikuDialog
+# 根据你的实际目录结构导入 MikuDialog
+from ..Concerning.miku_dialog import MikuDialog
+
+def get_build_date() -> str:
+    """
+    获取编译时写入的日期。
+    优先读取打包环境中的 build_info.py，如果失败则尝试开发环境，最后返回默认日期。
+    """
+    build_date = None
+    try:
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+            build_info_path = os.path.join(base_path, 'build_info.py')
+        else:
+            # 开发环境：当前文件在 pages/Disclaimer/Disclaimer.py
+            # 向上三级到达项目根目录
+            base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            build_info_path = os.path.join(base_path, 'build_info.py')
+        
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("build_info", build_info_path)
+        if spec and spec.loader:
+            build_info = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(build_info)
+            build_date = build_info.BUILD_DATE
+    except Exception:
+        pass
+
+    if not build_date:
+        build_date = "2026年03月16日"   # 默认日期（协议首次发布日）
+    return build_date
+
 
 class Disclaimer(QDialog):
     """
@@ -46,7 +76,11 @@ class Disclaimer(QDialog):
         # 协议文本区域（可滚动）
         self.disclaimer_text = QTextBrowser()
         self.disclaimer_text.setOpenExternalLinks(True)
-        disclaimer_content = """
+        
+        # 获取编译日期
+        build_date = get_build_date()
+        
+        disclaimer_content = f"""
 <h3>GMStools 工具软件使用协议与免责声明</h3>
 
 <p><strong style="color:#c0392b;">重要提示：使用本软件即表示您已阅读、理解并无条件同意本协议的全部内容。如果您不同意，请立即停止使用并删除本软件。</strong></p>
@@ -89,7 +123,7 @@ class Disclaimer(QDialog):
 <h4>10. 完整协议与可分割性</h4>
 <p>本协议构成您与开发者之间关于使用本软件的完整协议，并取代所有先前的口头或书面协议。如果本协议的任何部分被认定为无效或不可执行，其余部分仍应具有完全效力。</p>
 
-<p><strong>最后更新日期：</strong> 2026年3月16日</p>
+<p><strong>软件最后更新日期：</strong> {build_date}</p>
 """
         self.disclaimer_text.setHtml(disclaimer_content)
         self.disclaimer_text.setStyleSheet("""
