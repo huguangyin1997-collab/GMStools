@@ -1,0 +1,90 @@
+
+开发者模式中的OEM-->
+adb reboot bootloader-->  
+fastboot flashing unlock进去后：音量上键，提示ok--->
+fastboot reboot  ----> 
+adb root && adb remount
+- adb root
+- adb disable-verity
+- adb reboot
+- adb root
+- adb remount
+
+
+
+安卓10.0
+
+unlock(需要先解锁,已经解锁的无需执行此操作)
+
+adb reboot bootloader
+sudo ./fastboot oem get_identifier_token (会得到一串数字)
+sudo ./signidentifier_unlockbootloader.sh 30313233343536373839414243444546 rsa4096_vbmeta.pem sign.bin(使用上一步得到的一串数字，使用对应的 pem文件)
+sudo ./fastboot flashing unlock_bootloader sign.bin (按音量下键或上键)
+//加锁：sudo ./fastboot flashing lock_bootloader
+sudo ./fastboot reboot(清除data分区)
+gsi 用指令刷机
+
+adb reboot fastboot
+fastboot flash system system.img(输入谷歌给的镜像)
+fastboot reboot bootloader（也可以按上下键选择按电源键确认进入bootloader,⼿机会重启并进⼊fastboot mode）
+fastboot flash boot boot.img(测试vts需要手机非root)
+
+fastboot reboot
+用刷机工具操作:
+
+vts 用指令刷机
+
+adb reboot fastboot
+fastboot flash system system.img(输入谷歌给的镜像)
+fastboot reboot bootloader（也可以按上下键选择按电源键确认进入bootloader,⼿机会重启并进⼊fastboot mode）
+fastboot flash boot boot-debug.img(测试vts需要手机root)
+fastboot reboot
+
+
+
+安卓11
+
+unlock(需要先解锁,已经解锁的无需执行此操作)
+
+adb reboot bootloader
+sudo ./fastboot oem get_identifier_token (会得到一串数字)
+sudo ./signidentifier_unlockbootloader.sh 333533383532323431343132343235 rsa4096_vbmeta.pem sign.bin(使用上一步得到的一串数字)
+sudo ./fastboot flashing unlock_bootloader sign.bin (按音量下键)
+sudo ./fastboot reboot
+gsi 用指令刷机
+
+adb reboot fastboot
+fastboot flash system_a system.img(输入谷歌给的镜像)
+fastboot reboot bootloader（也可以按上下键选择按电源键确认进入bootloader,⼿机会重启并进⼊fastboot mode）
+fastboot flash boot_a boot.img(测试vts需要手机非root)
+fastboot erase userdata
+fastboot reboot recovery(recovery模式中可以继续reset)
+fastboot reboot
+用刷机工具操作:
+
+vts 用指令刷机
+
+adb reboot fastboot
+fastboot flash system_a system.img(输入谷歌给的镜像)
+fastboot reboot bootloader（也可以按上下键选择按电源键确认进入bootloader,⼿机会重启并进⼊fastboot mode）
+fastboot flash boot_a boot-debug.img(测试vts需要手机root)
+fastboot erase userdata
+fastboot reboot recovery(recovery模式中可以继续reset)
+fastboot reboot
+
+分区不足的话:
+这时请先执行指令"fastboot delete-logical-partition product_a"，
+接着"fastboot create-logical-partition product_a 0"
+再做"fastboot flash system_a system.img"动作
+
+GSI:
+adb root
+adb shell start yloglite 
+adb shell yloglitectl enable 
+adb shell yloglitectl sroot /data/vendor/ylog 
+adb shell cplogctl setlog modem stor 
+adb shell cplogctl setlog wcn stor 
+adb shell cplogctl setlog gnss stor 
+adb reboot
+/data/vendor/ylog/
+adb pull /data/vendor/ylog/

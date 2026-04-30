@@ -6,5 +6,12 @@ from .Concerning.Concerning import Concerning
 from .SMRComparison.SMRComparison import SMRComparison
 from .CVAutomation.CVAutomation import CVAutomation
 from .Disclaimer.Disclaimer import Disclaimer
+from .Autounlock.Autounlock import Autounlock      # 新增
+from .Newfeatures.Newfeatures import Newfeatures   # 新增
+
 # 定义导出的名称
-__all__ = ['CheckupReport', 'Ctsverifierdb', 'Modulecomparison', 'Concerning',"SMRComparison", "CVAutomation", "Disclaimer"]
+__all__ = [
+    'CheckupReport', 'Ctsverifierdb', 'Modulecomparison', 'Concerning',
+    'SMRComparison', 'CVAutomation', 'Disclaimer',
+    'Autounlock', 'Newfeatures'                     # 新增
+]

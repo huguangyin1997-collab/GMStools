@@ -6,20 +6,43 @@ from .SMR_FileUtils import SMR_FileUtils
 
 class SMR_InfoExtractor:
     """SMR信息提取器，专门负责从文件中提取各种信息"""
-    
+
     def __init__(self, file_utils=None):
         self.file_utils = file_utils or SMR_FileUtils()
-    
+        self._walk_cache = {}  # directory -> {".html": [...], "genericdeviceinfo...": [...], ...}
+
+    def _get_dir_files(self, directory):
+        """Walk directory once and cache categorized file lists."""
+        if directory in self._walk_cache:
+            return self._walk_cache[directory]
+
+        categorized = {
+            "html": [],
+            "genericdeviceinfo": [],
+            "propertydeviceinfo": [],
+            "mainlinedeviceinfo": [],
+        }
+        for root, dirs, files in os.walk(directory):
+            for f in files:
+                low = f.lower()
+                fp = os.path.join(root, f)
+                if low.endswith('.html'):
+                    categorized["html"].append(fp)
+                elif low == 'genericdeviceinfo.deviceinfo.json':
+                    categorized["genericdeviceinfo"].append(fp)
+                elif low == 'propertydeviceinfo.deviceinfo.json':
+                    categorized["propertydeviceinfo"].append(fp)
+                elif low == 'mainlinedeviceinfo.deviceinfo.json':
+                    categorized["mainlinedeviceinfo"].append(fp)
+
+        self._walk_cache[directory] = categorized
+        return categorized
+
     def extract_fingerprint_from_html(self, directory):
         """从HTML报告中提取Fingerprint"""
         fingerprint = "未找到"
-        
-        # 查找HTML报告文件
-        html_files = []
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                if file.lower().endswith('.html'):
-                    html_files.append(os.path.join(root, file))
+
+        html_files = self._get_dir_files(directory)["html"][:]
         
         # 按常见报告文件名排序，优先检查标准报告
         html_files.sort(key=lambda x: (
@@ -66,13 +89,8 @@ class SMR_InfoExtractor:
             "build_fingerprint": "未找到",
             "build_version_base_os": "未找到"
         }
-        
-        # 查找GenericDeviceInfo.deviceinfo.json文件
-        json_files = []
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                if file.lower() == 'genericdeviceinfo.deviceinfo.json':
-                    json_files.append(os.path.join(root, file))
+
+        json_files = self._get_dir_files(directory)["genericdeviceinfo"]
         
         if json_files:
             # 通常只有一个，取第一个
@@ -90,13 +108,8 @@ class SMR_InfoExtractor:
     def extract_security_patch(self, directory):
         """从目录中提取安全补丁日期"""
         security_patch = "未找到"
-        
-        # 查找HTML报告文件
-        html_files = []
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                if file.lower().endswith('.html'):
-                    html_files.append(os.path.join(root, file))
+
+        html_files = self._get_dir_files(directory)["html"][:]
         
         # 按常见报告文件名排序，优先检查标准报告
         html_files.sort(key=lambda x: (
@@ -152,13 +165,8 @@ class SMR_InfoExtractor:
     def extract_gms_version(self, directory):
         """从PropertyDeviceInfo.deviceinfo.json中提取GMS版本"""
         gms_version = "未找到"
-        
-        # 查找PropertyDeviceInfo.deviceinfo.json文件
-        json_files = []
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                if file.lower() == 'propertydeviceinfo.deviceinfo.json':
-                    json_files.append(os.path.join(root, file))
+
+        json_files = self._get_dir_files(directory)["propertydeviceinfo"]
         
         if json_files:
             # 通常只有一个，取第一个
@@ -178,17 +186,12 @@ class SMR_InfoExtractor:
     def extract_mainline_version(self, directory):
         """从MainlineDeviceInfo.deviceinfo.json中提取Mainline版本信息"""
         mainline_info = {
-            "type": "unknown",  # "GO" 或 "non-GO"
+            "type": "unknown",
             "version": "未找到",
             "module_name": "未找到"
         }
-        
-        # 查找MainlineDeviceInfo.deviceinfo.json文件
-        json_files = []
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                if file.lower() == 'mainlinedeviceinfo.deviceinfo.json':
-                    json_files.append(os.path.join(root, file))
+
+        json_files = self._get_dir_files(directory)["mainlinedeviceinfo"]
         
         if json_files:
             # 通常只有一个，取第一个

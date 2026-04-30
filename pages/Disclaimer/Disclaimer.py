@@ -83,7 +83,7 @@ class Disclaimer(QDialog):
         disclaimer_content = f"""
 <h3>GMStools 工具软件使用协议与免责声明</h3>
 
-<p><strong style="color:#c0392b;">重要提示：使用本软件即表示您已阅读、理解并无条件同意本协议的全部内容。如果您不同意，请立即停止使用并删除本软件。</strong></p>
+<p><strong style="color:#E91E63;">重要提示：使用本软件即表示您已阅读、理解并无条件同意本协议的全部内容。如果您不同意，请立即停止使用并删除本软件。</strong></p>
 
 <p>本项目基于 Apache License 2.0 许可证发行，以下协议是对于 Apache License 2.0 的补充，如有冲突，以本协议为准。</p>
 
@@ -171,7 +171,7 @@ class Disclaimer(QDialog):
         self.reject_btn = QPushButton("拒绝")
         self.reject_btn.setStyleSheet("""
             QPushButton {
-                background-color: #c0392b;
+                background-color: #E91E63;
                 color: white;
                 font-size: 16px;
                 font-weight: bold;
@@ -180,10 +180,10 @@ class Disclaimer(QDialog):
                 border: none;
             }
             QPushButton:hover {
-                background-color: #e74c3c;
+                background-color: #C2185B;
             }
             QPushButton:pressed {
-                background-color: #a93226;
+                background-color: #AD1457;
             }
         """)
         self.reject_btn.clicked.connect(self.on_reject)

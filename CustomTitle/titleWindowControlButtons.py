@@ -19,24 +19,23 @@ class WindowControlButtons(QWidget):
             QPushButton {
                 border: none;
                 background-color: transparent; /* 永远透明，避免黑色背景块 */
-                color: #000000;  /* 未选中时为黑色 */
-                font-size: 14px;  /* 使用适中的图标尺寸 */
+                color: #ffffff;
+                font-size: 14px;
                 font-weight: normal;
                 padding: 0px;
                 margin: 0px;
                 /* 优先使用非彩色的系统字体（DejaVu 在 Linux 上常见），避免回退到彩色 emoji */
                 font-family: "DejaVu Sans", "Noto Sans", "Segoe UI Symbol", sans-serif;
                 text-align: center;
-                line-height: 50px;  /* 与放大后的按钮高度匹配 */
+                line-height: 50px;
             }
-            /* 悬停/按下时不改变背景，只改变图标颜色 */
             QPushButton:hover {
                 background-color: transparent;
-                color: #007BFF;  /* 悬停时为蓝色 */
+                color: #259990;
             }
             QPushButton:pressed {
                 background-color: transparent;
-                color: #FF0000;  /* 按下/选中时为红色 */
+                color: #E91E63;
             }
             /* 普通按钮（最小化/最大化）颜色规则 */
             QPushButton#minBtn, QPushButton#maxBtn {

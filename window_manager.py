@@ -58,21 +58,28 @@ class WindowManager(QMainWindow):
         if self.background_original.isNull():
             print(f"❌ 背景图片加载失败: {image_path}")
             self.background_original = QPixmap(1200, 800)
-            self.background_original.fill(QColor(52, 152, 219))
+            self.background_original.fill(QColor(57, 197, 187))
         self.update_background()
 
-    def update_background(self):
+    def update_background(self, smooth=True):
         if not hasattr(self, 'background_original'):
             return
+        new_size = self.size()
+        # skip if size unchanged
+        if hasattr(self, '_last_bg_size') and self._last_bg_size == new_size:
+            return
+        self._last_bg_size = new_size
+
+        mode = Qt.TransformationMode.SmoothTransformation if smooth else Qt.TransformationMode.FastTransformation
         scaled_pixmap = self.background_original.scaled(
-            self.size(),
+            new_size,
             Qt.AspectRatioMode.KeepAspectRatioByExpanding,
-            Qt.TransformationMode.SmoothTransformation
+            mode
         )
-        if scaled_pixmap.width() > self.width() or scaled_pixmap.height() > self.height():
-            x = (scaled_pixmap.width() - self.width()) // 2
-            y = (scaled_pixmap.height() - self.height()) // 2
-            scaled_pixmap = scaled_pixmap.copy(x, y, self.width(), self.height())
+        if scaled_pixmap.width() > new_size.width() or scaled_pixmap.height() > new_size.height():
+            x = (scaled_pixmap.width() - new_size.width()) // 2
+            y = (scaled_pixmap.height() - new_size.height()) // 2
+            scaled_pixmap = scaled_pixmap.copy(x, y, new_size.width(), new_size.height())
         palette = self.palette()
         palette.setBrush(QPalette.ColorRole.Window, QBrush(scaled_pixmap))
         self.setPalette(palette)
@@ -150,13 +157,16 @@ class WindowManager(QMainWindow):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        # fast preview during active resize
+        self.update_background(smooth=False)
+        # smooth re-render when resize settles
         if hasattr(self, '_resize_timer'):
             self._resize_timer.stop()
         else:
             self._resize_timer = QTimer()
             self._resize_timer.setSingleShot(True)
-            self._resize_timer.timeout.connect(self.update_background)
-        self._resize_timer.start(100)
+            self._resize_timer.timeout.connect(lambda: self.update_background(smooth=True))
+        self._resize_timer.start(150)
 
     def showEvent(self, event):
         super().showEvent(event)

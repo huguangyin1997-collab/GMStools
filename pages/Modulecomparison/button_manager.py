@@ -42,15 +42,15 @@ class ButtonManager:
                 QPushButton {
                     padding: 8px 15px;
                     font-size: 14px;
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 4px;
-                    background-color: #3498db;
+                    background-color: #39C5BB;
                     color: white;
                 }
                 QPushButton:hover {
-                    background-color: #2980b9;
+                    background-color: #2FAFA6;
                 }
                 QPushButton:pressed {
-                    background-color: #2471a3;
+                    background-color: #259990;
                 }
             """

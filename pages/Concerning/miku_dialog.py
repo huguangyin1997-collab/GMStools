@@ -157,7 +157,7 @@ class MikuDialog(QDialog):
                 padding: 8px 16px;
                 border: 2px solid #bdc3c7;
                 color: white;
-                background-color: #3498db !important;
+                background-color: #39C5BB !important;
                 font-size: 14px;
                 font-weight: bold;
                 border-radius: 15px;
@@ -172,7 +172,7 @@ class MikuDialog(QDialog):
             }
             QPushButton#okBtn:pressed, QPushButton#yesBtn:pressed, QPushButton#noBtn:pressed, QPushButton#cancelBtn:pressed {
                 color: red;
-                background-color: #16d8de !important;
+                background-color: #259990 !important;
             }
         """
         btn.setStyleSheet(style)

@@ -32,7 +32,7 @@ class DirectoryManager:
             QLineEdit {
                 padding: 4px 8px;
                 font-size: 14px;
-                border: 2px solid #3498db;
+                border: 2px solid #39C5BB;
                 border-radius: 4px;
                 background-color: white;
                 color: black;
@@ -135,7 +135,7 @@ class DirectoryManager:
         if self.current_selection_type in ('file', 'directory'):
             border_color = "#27ae60"  # 绿色（有效路径）
         else:
-            border_color = "#3498db"  # 蓝色（无效或未选）
+            border_color = "#39C5BB"  # 蓝色（无效或未选）
         
         self.directory_line.setStyleSheet(f"""
             QLineEdit {{

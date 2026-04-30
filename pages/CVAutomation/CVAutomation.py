@@ -112,14 +112,14 @@ class CVAutomation(QWidget):
     def get_button_style(self) -> str:
         return """
             QPushButton {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 border: 1px solid #bdc3c7;
                 border-radius: 0px;
                 color: white;
                 font-size: 14px;
             }
             QPushButton:hover { color: red; }
-            QPushButton:pressed { background-color: #2980b9; }
+            QPushButton:pressed { background-color: #2FAFA6; }
         """
 
     def get_path_style(self) -> str:
@@ -148,7 +148,7 @@ class CVAutomation(QWidget):
 
     # ---------- 设备管理 ----------
     def on_refresh_clicked(self):
-        self.refresh_btn.setStyleSheet(self.get_button_style().replace("#3498db", "#2980b9"))
+        self.refresh_btn.setStyleSheet(self.get_button_style().replace("#39C5BB", "#2FAFA6"))
         self.refresh_device_list()
         QTimer.singleShot(1000, lambda: self.refresh_btn.setStyleSheet(self.get_button_style()))
 

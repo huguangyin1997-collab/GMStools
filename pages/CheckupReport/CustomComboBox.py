@@ -29,23 +29,23 @@ class CustomComboBox(QPushButton):
         self.setFixedHeight(36)
         self.setStyleSheet("""
             CustomComboBox {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: white;
-                border: 2px solid #3498db;
+                border: 2px solid #39C5BB;
                 border-radius: 5px;
                 padding: 6px 35px 6px 12px;
                 font-size: 14px;
                 text-align: left;
             }
             CustomComboBox:hover {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: red;
-                border: 2px solid #3498db;
+                border: 2px solid #39C5BB;
             }
             CustomComboBox:pressed {
-                background-color: #2980b9;
+                background-color: #259990;
                 color: red;
-                border: 2px solid #2980b9;
+                border: 2px solid #259990;
             }
         """)
         
@@ -57,13 +57,13 @@ class CustomComboBox(QPushButton):
         self.menu.setStyleSheet("""
             QMenu {
                 background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #e0f7fa, stop:0.5 #b2ebf2, stop:1 #80deea);
+                    stop:0 #e0f2f1, stop:0.5 #b2dfdb, stop:1 #80cbc4);
                 border: 2px solid #4dd0e1;
                 border-radius: 5px;
                 padding: 5px;
             }
             QMenu::item {
-                background-color: rgba(52, 152, 219, 0.8);
+                background-color: rgba(57, 197, 187, 0.8);
                 color: white;
                 padding: 8px 12px;
                 border-radius: 3px;
@@ -71,11 +71,11 @@ class CustomComboBox(QPushButton):
                 margin: 2px;
             }
             QMenu::item:hover {
-                background-color: rgba(52, 152, 219, 0.9);
+                background-color: rgba(57, 197, 187, 0.9);
                 color: red;
             }
             QMenu::item:pressed {
-                background-color: rgba(41, 128, 185, 0.9);
+                background-color: rgba(37, 153, 144, 0.9);
                 color: red;
             }
             QMenu::item:selected {

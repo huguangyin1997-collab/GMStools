@@ -70,7 +70,7 @@ class Concerning(QWidget):
         button_layout = QHBoxLayout()
         button_layout.setContentsMargins(0, 10, 0, 0)
         self.check_btn = QPushButton("检查更新")
-        self.check_btn.setStyleSheet("QPushButton { background-color: #3498db; color: white; font-size: 14px; font-weight: bold; padding: 8px 16px; border-radius: 5px; border: none; } QPushButton:hover { background-color: #2980b9; } QPushButton:pressed { background-color: #216694; }")
+        self.check_btn.setStyleSheet("QPushButton { background-color: #39C5BB; color: white; font-size: 14px; font-weight: bold; padding: 8px 16px; border-radius: 5px; border: none; } QPushButton:hover { background-color: #2FAFA6; } QPushButton:pressed { background-color: #259990; }")
         self.check_btn.clicked.connect(self.check_for_updates)
         button_layout.addStretch()
         button_layout.addWidget(self.check_btn)

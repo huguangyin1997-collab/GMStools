@@ -19,16 +19,16 @@ def create_file_selection_button(text, width=140, height=36):
         QPushButton {
             padding: 8px 15px;
             font-size: 14px;
-            border: 2px solid #3498db;
+            border: 2px solid #39C5BB;
             border-radius: 4px;
-            background-color: #3498db;
+            background-color: #39C5BB;
             color: white;
         }
         QPushButton:hover {
-            background-color: #2980b9;
+            background-color: #2FAFA6;
         }
         QPushButton:pressed {
-            background-color: #2471a3;
+            background-color: #259990;
         }
     """)
     return button
@@ -39,7 +39,7 @@ def create_action_button(text):
     button.setFixedHeight(36)  # 只设置高度，宽度由布局控制
     button.setStyleSheet("""
         QPushButton {
-            background-color: #3498db;
+            background-color: #39C5BB;
             color: white;
             border: none;
             border-radius: 4px;
@@ -47,7 +47,7 @@ def create_action_button(text):
             font-size: 14px;
         }
         QPushButton:hover {
-            background-color: #2980b9;
+            background-color: #2FAFA6;
         }
         QPushButton:pressed {
             background-color: #21618c;
@@ -90,8 +90,8 @@ def get_combo_box_style(is_selected=False):
                 width: 20px;
             }
             QComboBox QAbstractItemView {
-                border: 1px solid #3498db;
-                selection-background-color: #3498db;
+                border: 1px solid #39C5BB;
+                selection-background-color: #39C5BB;
                 font-size: 14px;
             }
         """
@@ -99,7 +99,7 @@ def get_combo_box_style(is_selected=False):
         return """
             QComboBox {
                 background-color: white;
-                border: 2px solid #3498db;
+                border: 2px solid #39C5BB;
                 border-radius: 4px;
                 padding: 5px;
                 min-width: 200px;
@@ -110,12 +110,12 @@ def get_combo_box_style(is_selected=False):
             }
             QComboBox::down-arrow {
                 image: none;
-                border-left: 1px solid #3498db;
+                border-left: 1px solid #39C5BB;
                 width: 20px;
             }
             QComboBox QAbstractItemView {
-                border: 1px solid #3498db;
-                selection-background-color: #3498db;
+                border: 1px solid #39C5BB;
+                selection-background-color: #39C5BB;
                 font-size: 14px;
             }
         """
@@ -136,7 +136,7 @@ def get_text_edit_style(has_content=False):
         return """
             QTextEdit {
                 background-color: rgba(255, 255, 255, 0.6);
-                border: 2px solid #3498db;
+                border: 2px solid #39C5BB;
                 border-radius: 4px;
                 padding: 10px;
                 font-size: 14px;

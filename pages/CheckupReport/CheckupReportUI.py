@@ -161,7 +161,7 @@ class CheckupReportUI(QWidget):
                 QLineEdit {
                     background-color: white;
                     color: #2c3e50;
-                    border: 2px solid #e74c3c;
+                    border: 2px solid #E91E63;
                     border-radius: 5px;
                     padding: 6px 12px;
                     font-size: 14px;
@@ -276,7 +276,7 @@ class CheckupReportUI(QWidget):
         text_edit.setStyleSheet("""
             QTextEdit {
                 background-color: rgba(255, 255, 255, 0.8);
-                border: 2px solid #3498db;
+                border: 2px solid #39C5BB;
                 border-radius: 8px;
                 padding: 8px;
                 font-size: 11px;
@@ -323,7 +323,7 @@ class CheckupReportUI(QWidget):
                 height: 20px;
             }
             QProgressBar::chunk {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 border-radius: 3px;
             }
         """)
@@ -333,7 +333,7 @@ class CheckupReportUI(QWidget):
         """获取按钮样式 - 修复选中状态显示问题"""
         return """
             QPushButton {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: white;
                 border: none;
                 border-radius: 5px;
@@ -347,7 +347,7 @@ class CheckupReportUI(QWidget):
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #2FAFA6;
                 color: white;
             }
             QPushButton:hover:checked {
@@ -355,7 +355,7 @@ class CheckupReportUI(QWidget):
                 color: white;
             }
             QPushButton:pressed {
-                background-color: #2473a6;
+                background-color: #259990;
                 color: white;
             }
             QPushButton:pressed:checked {
@@ -390,7 +390,7 @@ class CheckupReportUI(QWidget):
                 QLineEdit {
                     background-color: white;
                     color: #2c3e50;
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 5px;
                     padding: 6px 12px;
                     font-size: 14px;
@@ -415,7 +415,7 @@ class CheckupReportUI(QWidget):
             return """
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0.8);
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 8px;
                     padding: 8px;
                     font-size: 12px;
@@ -431,10 +431,10 @@ class CheckupReportUI(QWidget):
             status_color = "#27ae60"  # 绿色
         elif version_text == "FULL 版本":
             status_text = "当前模式：FULL版本 - 不检查APTS报告"
-            status_color = "#e74c3c"  # 红色
+            status_color = "#E91E63"  # 红色
         else:
             status_text = "当前模式：默认 - 检查所有报告（包括APTS）"
-            status_color = "#3498db"  # 蓝色
+            status_color = "#39C5BB"  # 蓝色
         
         # 在目录路径文本框下方显示状态提示
         self.directory_path.setPlaceholderText(f"{status_text} - 请选择报告目录...")
@@ -551,7 +551,7 @@ class CheckupReportUI(QWidget):
                     # 将❌和⚠️替换为✅
                     block = block.replace('❌', '✅').replace('⚠️', '✅')
                 elif status == "failed":
-                    color_style = "color: #e74c3c;"  # 红色
+                    color_style = "color: #E91E63;"  # 红色
                     # 将❌和⚠️替换为❌（保持为❌，不替换为图片）
                     # 这样确保后续仍然可以识别这个错误块
                     block = block.replace('❌', '❌').replace('⚠️', '❌')
@@ -685,8 +685,8 @@ class CheckupReportUI(QWidget):
             # 设置菜单样式 - 蓝色背景，悬停时文字变绿色
             menu.setStyleSheet("""
                 QMenu {
-                    background-color: #3498db;
-                    border: 1px solid #2980b9;
+                    background-color: #39C5BB;
+                    border: 1px solid #2FAFA6;
                     border-radius: 5px;
                     padding: 5px;
                 }
@@ -698,7 +698,7 @@ class CheckupReportUI(QWidget):
                     font-size: 14px;
                 }
                 QMenu::item:selected {
-                    background-color: #2980b9;
+                    background-color: #2FAFA6;
                     color: #27ae60;  /* 悬停时文字变为绿色 */
                 }
                 QMenu::item:disabled {
@@ -706,7 +706,7 @@ class CheckupReportUI(QWidget):
                 }
                 QMenu::separator {
                     height: 1px;
-                    background-color: #2980b9;
+                    background-color: #2FAFA6;
                     margin: 5px 0px;
                 }
             """)

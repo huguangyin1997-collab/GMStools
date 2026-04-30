@@ -38,7 +38,7 @@ class UIStyles:
                 QComboBox {
                     padding: 8px;
                     font-size: 14px;
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 4px;
                     background-color: white;
                     color: black;
@@ -54,7 +54,7 @@ class UIStyles:
                 QComboBox QAbstractItemView {
                     background-color: white;
                     color: black;
-                    selection-background-color: #3498db;
+                    selection-background-color: #39C5BB;
                     selection-color: white;
                     border: 1px solid #ccc;
                     outline: none;
@@ -90,16 +90,16 @@ class UIStyles:
                     padding: 8px 15px;
                     font-size: 16px;
                     font-weight: bold;
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 4px;
-                    background-color: #3498db;
+                    background-color: #39C5BB;
                     color: white;
                 }
                 QPushButton:hover {
-                    background-color: #2980b9;
+                    background-color: #2FAFA6;
                 }
                 QPushButton:pressed {
-                    background-color: #2471a3;
+                    background-color: #259990;
                 }
             """
     
@@ -129,16 +129,16 @@ class UIStyles:
                     padding: 8px 15px;
                     font-size: 16px;
                     font-weight: bold;
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 6px;
-                    background-color: #3498db;
+                    background-color: #39C5BB;
                     color: white;
                 }
                 QPushButton:hover {
-                    background-color: #2980b9;
+                    background-color: #2FAFA6;
                 }
                 QPushButton:pressed {
-                    background-color: #2471a3;
+                    background-color: #259990;
                 }
             """
     
@@ -160,7 +160,7 @@ class UIStyles:
                 QLineEdit {
                     padding: 8px;
                     font-size: 14px;
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 4px;
                     background-color: white;
                     color: black;
@@ -185,7 +185,7 @@ class UIStyles:
             return """
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0.8);
-                    border: 2px solid #3498db;
+                    border: 2px solid #39C5BB;
                     border-radius: 8px;
                     padding: 12px;
                     font-size: 12px;
@@ -199,7 +199,7 @@ class UIStyles:
         return """
             QTextEdit {
                 background-color: rgba(255, 255, 255, 0.8);
-                border: 2px solid #3498db;
+                border: 2px solid #39C5BB;
                 border-radius: 8px;
                 padding: 12px;
                 font-size: 12px;
@@ -241,8 +241,8 @@ class UIStyles:
         """获取框架样式"""
         return """
             QFrame {
-                background-color: rgba(52, 152, 219, 0.2);
-                border: 2px solid #3498db;
+                background-color: rgba(57, 197, 187, 0.2);
+                border: 2px solid #39C5BB;
                 border-radius: 8px;
             }
         """

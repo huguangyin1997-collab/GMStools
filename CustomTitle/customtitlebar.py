@@ -25,13 +25,13 @@ class CustomTitleBar(QWidget):
         # 设置标题栏样式 - 将颜色改为黑色并加粗
         self.setStyleSheet("""
             CustomTitleBar {
-                background-color: #2c3e50;
+                background-color: #39C5BB;
                 border-top-left-radius: 15px;
                 border-top-right-radius: 15px;
             }
             QLabel {
                 background-color: transparent;
-                color: #000000;  /* 改为黑色 */
+                color: #ffffff;
                 font-size: 18px;
                 font-weight: 900;  /* 改为900，更粗 */
                 font-family: "Microsoft YaHei", "Segoe UI";

@@ -642,7 +642,7 @@ class PackageComparator:
             color: #2c3e50;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid #39C5BB;
         }}
         
         .info-item {{
@@ -717,7 +717,7 @@ class PackageComparator:
             color: #2c3e50;
             margin-bottom: 25px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid #39C5BB;
         }}
         
         .legend {{
@@ -872,9 +872,9 @@ class PackageComparator:
         }}
         
         .filter-btn.active {{
-            background: #3498db;
+            background: #39C5BB;
             color: white;
-            border-color: #3498db;
+            border-color: #39C5BB;
         }}
         
         /* 页脚 */

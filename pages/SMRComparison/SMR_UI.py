@@ -24,12 +24,12 @@ class SMR_UI:
         """创建控制按钮行"""
         # 第一行：MR目录输入框 + MR按钮
         row1_container, self.mr_directory_input, self.select_mr_btn = self.create_directory_row(
-            "请选择MR报告目录", "选择MR报告", "#3498db", "#2980b9", "#27ae60"  # 修改pressed_color为#27ae60
+            "请选择MR报告目录", "选择MR报告", "#39C5BB", "#2FAFA6", "#27ae60"  # 修改pressed_color为#27ae60
         )
         
         # 第二行：SMR目录输入框 + SMR按钮
         row2_container, self.smr_directory_input, self.select_smr_btn = self.create_directory_row(
-            "请选择SMR报告目录", "选择SMR报告", "#3498db", "#2980b9", "#27ae60"  # 修改normal_color为#3498db，pressed_color为#27ae60
+            "请选择SMR报告目录", "选择SMR报告", "#39C5BB", "#2FAFA6", "#27ae60"  # 修改normal_color为#39C5BB，pressed_color为#27ae60
         )
         
         # 第三行：开始分析和清除记录按钮
@@ -101,12 +101,12 @@ class SMR_UI:
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
         
-        # 创建开始分析按钮 - 修改背景色为#3498db，点击后为#27ae60
+        # 创建开始分析按钮 - 修改背景色为#39C5BB，点击后为#27ae60
         self.analyze_btn = QPushButton("开始分析")
         self.analyze_btn.setFixedHeight(36)
         self.analyze_btn.setStyleSheet("""
             QPushButton {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: white;
                 border: none;
                 padding: 0 15px;
@@ -115,19 +115,19 @@ class SMR_UI:
                 font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #2FAFA6;
             }
             QPushButton:pressed {
                 background-color: #27ae60;
             }
         """)
         
-        # 创建清除记录按钮 - 修改背景色为#3498db，点击后为#27ae60
+        # 创建清除记录按钮 - 修改背景色为#39C5BB，点击后为#27ae60
         self.clear_btn = QPushButton("清除记录")
         self.clear_btn.setFixedHeight(36)
         self.clear_btn.setStyleSheet("""
             QPushButton {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: white;
                 border: none;
                 padding: 0 15px;
@@ -136,7 +136,7 @@ class SMR_UI:
                 font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #2FAFA6;
             }
             QPushButton:pressed {
                 background-color: #27ae60;

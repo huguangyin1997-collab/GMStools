@@ -216,7 +216,7 @@ class Modulecomparison(QWidget):
         """设置初始按钮样式 - 两个按钮都为蓝色"""
         blue_style = """
             QPushButton {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: white;
                 border: none;
                 border-radius: 4px;
@@ -224,10 +224,10 @@ class Modulecomparison(QWidget):
                 font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #2FAFA6;
             }
             QPushButton:pressed {
-                background-color: #21618c;
+                background-color: #259990;
             }
         """
         self.start_compare_btn.setStyleSheet(blue_style)
@@ -256,7 +256,7 @@ class Modulecomparison(QWidget):
         # 清除记录按钮：蓝色
         self.clear_log_btn.setStyleSheet("""
             QPushButton {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: white;
                 border: none;
                 border-radius: 4px;
@@ -264,10 +264,10 @@ class Modulecomparison(QWidget):
                 font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #2FAFA6;
             }
             QPushButton:pressed {
-                background-color: #21618c;
+                background-color: #259990;
             }
         """)
     
@@ -276,7 +276,7 @@ class Modulecomparison(QWidget):
         # 开始对比按钮：蓝色
         self.start_compare_btn.setStyleSheet("""
             QPushButton {
-                background-color: #3498db;
+                background-color: #39C5BB;
                 color: white;
                 border: none;
                 border-radius: 4px;
@@ -284,10 +284,10 @@ class Modulecomparison(QWidget):
                 font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #2FAFA6;
             }
             QPushButton:pressed {
-                background-color: #21618c;
+                background-color: #259990;
             }
         """)
         
