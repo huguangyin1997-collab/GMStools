@@ -1,0 +1,179 @@
+import sys
+import os
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout
+from PyQt6.QtCore import Qt, QTimer, QSettings
+from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor, QIcon
+
+from CustomTitle import CustomTitleBar
+from PageManager import PageManager
+from usekey import sign_disclaimer_accepted
+
+class WindowManager(QMainWindow):
+    def __init__(self, disclaimer_already_accepted=False, config_path=None):
+        super().__init__()
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setWindowTitle("GMStools工具")
+        self.resize(1200, 800)
+
+        self.disclaimer_already_accepted = disclaimer_already_accepted
+        self.config_path = config_path
+
+        # 立即设置临时背景色，避免白色闪现
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(44, 62, 80))
+        self.setPalette(palette)
+
+        self.setup_ui()
+
+        # 设置窗口图标（仅一次）
+        self.setWindowIconFromFile()
+
+        if self.disclaimer_already_accepted:
+            self.on_disclaimer_agreed(skip_save=True)
+        else:
+            self.connect_disclaimer_signals()
+
+        # 延迟加载背景图片和完整初始化，不阻塞界面显示
+        QTimer.singleShot(0, self._complete_initialization)
+
+    def get_resource_path(self, relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(base_path, relative_path)
+
+    def setWindowIconFromFile(self):
+        icon_path = self.get_resource_path("app.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+            print(f"窗口图标已设置: {icon_path}")
+        else:
+            print("警告: 未找到窗口图标文件 app.ico")
+
+    def setup_background(self):
+        image_path = self.get_resource_path("Miku.jpg")
+        self.background_original = QPixmap(image_path)
+        if self.background_original.isNull():
+            print(f"❌ 背景图片加载失败: {image_path}")
+            self.background_original = QPixmap(1200, 800)
+            self.background_original.fill(QColor(57, 197, 187))
+        self.update_background()
+
+    def update_background(self, smooth=True):
+        if not hasattr(self, 'background_original'):
+            return
+        new_size = self.size()
+        # skip if size unchanged
+        if hasattr(self, '_last_bg_size') and self._last_bg_size == new_size:
+            return
+        self._last_bg_size = new_size
+
+        mode = Qt.TransformationMode.SmoothTransformation if smooth else Qt.TransformationMode.FastTransformation
+        scaled_pixmap = self.background_original.scaled(
+            new_size,
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            mode
+        )
+        if scaled_pixmap.width() > new_size.width() or scaled_pixmap.height() > new_size.height():
+            x = (scaled_pixmap.width() - new_size.width()) // 2
+            y = (scaled_pixmap.height() - new_size.height()) // 2
+            scaled_pixmap = scaled_pixmap.copy(x, y, new_size.width(), new_size.height())
+        palette = self.palette()
+        palette.setBrush(QPalette.ColorRole.Window, QBrush(scaled_pixmap))
+        self.setPalette(palette)
+
+    def setup_ui(self):
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        self.title_bar = CustomTitleBar()
+        self.title_bar.minimize_signal.connect(self.showMinimized)
+        self.title_bar.maximize_signal.connect(self.toggle_maximize)
+        self.title_bar.close_signal.connect(self.close)
+        main_layout.addWidget(self.title_bar)
+
+        content_widget = QWidget()
+        content_widget.setStyleSheet("""
+            QWidget {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-bottom-left-radius: 15px;
+                border-bottom-right-radius: 15px;
+            }
+        """)
+        main_layout.addWidget(content_widget)
+
+        content_layout = QHBoxLayout(content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+
+        self.page_manager = PageManager(parent_widget=content_widget)
+
+        if not self.disclaimer_already_accepted:
+            self.page_manager.left_menu.setVisible(False)
+        else:
+            self.page_manager.left_menu.setVisible(True)
+            self.page_manager.disclaimer_accepted = True
+            disclaimer_page = self.page_manager.get_page("Disclaimer")
+            if disclaimer_page:
+                disclaimer_page.set_readonly_mode(True)
+
+        content_layout.addWidget(self.page_manager.left_menu)
+        content_layout.addWidget(self.page_manager.stacked_widget)
+
+    def _complete_initialization(self):
+        self.setup_background()
+
+    def connect_disclaimer_signals(self):
+        disclaimer_page = self.page_manager.get_page("Disclaimer")
+        if disclaimer_page:
+            disclaimer_page.agreed.connect(self.on_disclaimer_agreed)
+            disclaimer_page.rejected.connect(self.close)
+
+    def on_disclaimer_agreed(self, skip_save=False):
+        if not skip_save and self.config_path:
+            settings = QSettings(self.config_path, QSettings.Format.IniFormat)
+            signed = sign_disclaimer_accepted(True)
+            settings.setValue("disclaimer_accepted", signed)
+            settings.sync()
+
+        self.page_manager.left_menu.setVisible(True)
+        self.page_manager.disclaimer_accepted = True
+        disclaimer_page = self.page_manager.get_page("Disclaimer")
+        if disclaimer_page:
+            disclaimer_page.set_readonly_mode(True)
+        self.page_manager.set_current_page("CheckupReport")
+
+    def toggle_maximize(self):
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # fast preview during active resize
+        self.update_background(smooth=False)
+        # smooth re-render when resize settles
+        if hasattr(self, '_resize_timer'):
+            self._resize_timer.stop()
+        else:
+            self._resize_timer = QTimer()
+            self._resize_timer.setSingleShot(True)
+            self._resize_timer.timeout.connect(lambda: self.update_background(smooth=True))
+        self._resize_timer.start(150)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.update_background()
+        # 移除延迟图标设置，因为已在 __init__ 中设置一次
+
+    def closeEvent(self, event):
+        """窗口直接关闭，不进行任何ADB清理"""
+        print("closeEvent 触发，程序即将退出")
+        event.accept()
