@@ -786,30 +786,65 @@ class SMR_Analyzer:
                 
                 result += "\n"
         
-        # 输出新增的包
-        if added_pkgs:
-            result += "新增加apk\n"
-            for i, change in enumerate(added_pkgs, 1):
+        # 将新增/删除的包按系统级/非系统级分类
+        added_system_pkgs = []
+        added_non_system_pkgs = []
+        for change in added_pkgs:
+            is_system = change.new_package.get("system_priv", False) if change.new_package else False
+            if is_system:
+                added_system_pkgs.append(change)
+            else:
+                added_non_system_pkgs.append(change)
+
+        removed_system_pkgs = []
+        removed_non_system_pkgs = []
+        for change in removed_pkgs:
+            is_system = change.old_package.get("system_priv", False) if change.old_package else False
+            if is_system:
+                removed_system_pkgs.append(change)
+            else:
+                removed_non_system_pkgs.append(change)
+
+        # 输出新增的包（按系统级/非系统级分类）
+        if added_system_pkgs:
+            result += "新增系统级apk\n"
+            for i, change in enumerate(added_system_pkgs, 1):
                 result += f"第{i}个\n"
                 result += f"包名:{change.package_name}\n"
-                
                 if change.new_package:
                     version = change.new_package.get("version_name", "未知")
                     result += f"apk版本号: {version}\n"
-                
                 result += "\n"
-        
-        # 输出删除的包
-        if removed_pkgs:
-            result += "删除apk\n"
-            for i, change in enumerate(removed_pkgs, 1):
+
+        if added_non_system_pkgs:
+            result += "新增非系统级apk\n"
+            for i, change in enumerate(added_non_system_pkgs, 1):
                 result += f"第{i}个\n"
                 result += f"包名:{change.package_name}\n"
-                
+                if change.new_package:
+                    version = change.new_package.get("version_name", "未知")
+                    result += f"apk版本号: {version}\n"
+                result += "\n"
+
+        # 输出删除的包（按系统级/非系统级分类）
+        if removed_system_pkgs:
+            result += "删除系统级apk\n"
+            for i, change in enumerate(removed_system_pkgs, 1):
+                result += f"第{i}个\n"
+                result += f"包名:{change.package_name}\n"
                 if change.old_package:
                     version = change.old_package.get("version_name", "未知")
                     result += f"apk版本号: {version}\n"
-                
+                result += "\n"
+
+        if removed_non_system_pkgs:
+            result += "删除非系统级apk\n"
+            for i, change in enumerate(removed_non_system_pkgs, 1):
+                result += f"第{i}个\n"
+                result += f"包名:{change.package_name}\n"
+                if change.old_package:
+                    version = change.old_package.get("version_name", "未知")
+                    result += f"apk版本号: {version}\n"
                 result += "\n"
         
         # 总结报告
@@ -823,8 +858,8 @@ class SMR_Analyzer:
         result += "\n【详细分类统计】\n"
         result += f"  非系统级应用权限变更: {len(non_system_permission_changes)} 个\n"
         result += f"  系统级应用权限变更: {len(system_permission_changes)} 个\n"
-        result += f"  新增apk: {len(added_pkgs)} 个\n"
-        result += f"  删除apk: {len(removed_pkgs)} 个\n"
+        result += f"  新增apk: {len(added_pkgs)} 个（系统级: {len(added_system_pkgs)}, 非系统级: {len(added_non_system_pkgs)}）\n"
+        result += f"  删除apk: {len(removed_pkgs)} 个（系统级: {len(removed_system_pkgs)}, 非系统级: {len(removed_non_system_pkgs)}）\n"
         result += f"  apk版本号更新: {len(version_only_changes)} 个\n"
         
         # 统计各个关注字段的更新数量

@@ -18,6 +18,7 @@ GMStools.exe
 #新功能文件
 build_all_platforms.py
 git.txt
+.gitignore
 
 # 刷镜像日志
 logs/
