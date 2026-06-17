@@ -25,7 +25,7 @@ GMStools 是一款面向 Android 设备测试、调试与刷机的桌面工具�
 | 项目 | 要求 |
 |------|------|
 | Python | 3.10+ |
-| 操作系统 | Windows 10+ / Ubuntu 20.04+ |
+| 操作系统 | Windows 10+ / Ubuntu 24.04+ |
 | ADB 工具 | 外置于 `platform-tools/` 目录（应用会自动检测） |
 
 ---
