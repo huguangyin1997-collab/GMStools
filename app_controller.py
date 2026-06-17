@@ -8,6 +8,28 @@ from PyQt6.QtCore import QSharedMemory, QSettings, QObject, QEvent
 from window_manager import WindowManager
 from usekey import verify_disclaimer_accepted
 
+
+def _ensure_webengine():
+    """检查 PyQt6-WebEngine，未安装则尝试安装"""
+    if getattr(sys, 'frozen', False):
+        return
+    try:
+        import PyQt6.QtWebEngineWidgets  # noqa: F401
+        return
+    except ImportError:
+        pass
+
+    import subprocess
+    print("[启动] PyQt6-WebEngine 未安装，正在安装...")
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install",
+             "PyQt6-WebEngine==6.11.0", "--force-reinstall", "--no-deps"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        print("[启动] PyQt6-WebEngine 安装成功")
+    except Exception as e:
+        print(f"[启动] 安装失败: {e}，内嵌页面将降级为系统浏览器")
+
 class AppController(QObject):  # 继承 QObject 以使用事件过滤器
     def __init__(self):
         super().__init__()
@@ -84,6 +106,8 @@ class AppController(QObject):  # 继承 QObject 以使用事件过滤器
             sys.exit(self.app.exec())
 
 def main():
+    _ensure_webengine()
+
     try:
         controller = AppController()
         controller.initialize_application()

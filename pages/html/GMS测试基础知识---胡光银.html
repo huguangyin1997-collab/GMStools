@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMS测试基础知识---胡光银</title>
+    <style>
+        /* 全局样式 */
+        /* 文本选中颜色 */
+        ::selection {
+            background-color: #b3d9ff;
+            color: #000;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333; /* 使用更简洁的颜色表示 */
+            background-color: transparent; /* 透明背景，显示桌面 */
+        }
+
+        /* 容器 */
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 1200px;/* 调整以适合容器 */
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 标题容器 */
+        .title-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .title-container h1 {
+            margin: 0;
+            color: inherit; /* 继承body的颜色 */
+        }
+
+        /* 内容包装器和侧边栏 */
+        .content-wrapper {
+            display: flex;
+            width: 100%;
+        }
+        .sidebar {
+            width: 25%;
+            max-width: 180px;/* 目录宽度,可以根据需要调整 */
+            background-color: rgba(245, 245, 245, 0.75);/* 侧边栏半透明背景 */
+            padding: 10px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);/* 阴影效果 */
+            position: sticky;
+            top: 20px;/* 使得侧边栏在滚动时保持顶部位置 */
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0; /* 添加margin: 0以移除默认的ul外边距 */
+        }
+        .sidebar ul li {
+            margin: 10px 0;
+        }
+        .sidebar ul li a {
+            color: #000;/* 目录文字颜色为黑色 */
+            text-decoration: none;
+            display: block;
+            padding: 5px;
+            transition: color 0.3s, background-color 0.3s;
+            border-radius: 5px;/* 圆角效果 */
+        }
+        .sidebar ul li a:hover,
+        .sidebar ul li a:focus {
+            color: #08d3f7;/* 目录文字选中时颜色变为蓝色 */
+            background-color: #e0e0e0;
+        }
+
+        /* 介绍和内容区域 */
+        .intro-and-content {
+            flex: 1;
+            margin-left: 20px;
+            max-width: calc(75% - 20px);
+        }
+        .intro {
+            margin-bottom: 20px;
+        }
+        .content {
+            padding: 20px;
+            background-color: transparent; /* 透明背景 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 标题样式 */
+        h1, h2, h3 {
+            color: inherit; /* 继承body的颜色,如果需要可以覆盖 */
+        }
+
+        /* Code block styles */
+        .code-block {
+            position: relative; /* 相对定位,允许内部元素使用绝对定位 */
+            float: right; /* 使代码块浮动到容器的右侧 */
+            width: calc(100% - 40px); /* 宽度设置为容器宽度的100%减去40px,可能是为了留出一些边距 */
+            margin: 10px 0 20px 10px; /* 上边距10px,右边距0,下边距20px,左边距10px */
+            border: 1px solid #ddd; /* 边框为1px实线,颜色为浅灰色 */
+            border-radius: 5px; /* 边框圆角为5px */
+            background-color: rgba(249, 249, 249, 0.8); /* 半透明浅灰背景 */
+            padding: 10px; /* 内边距为10px */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 盒子阴影,增加立体感 */
+        }
+
+        .copy-btn {
+            background-color: #007bff; /* 浅蓝色背景 */
+            color: #000; /* 代码文字颜色为黑色 */
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .code-block.selected {
+            background-color: rgba(0, 123, 255, 0.3); /* 选中时半透明蓝色背景 */
+            color: #fff; /* 选中时的白色文字,确保在蓝色背景上可见 */
+        }
+
+        pre {
+            margin: 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-container">
+            <h1>GMS测试基础知识---胡光银</h1>
+        </div>
+        <div class="content-wrapper">
+        <div class="sidebar">
+            <h2>目录</h2>
+            <ul>
+                <li><a href="#section1">什么是GMS</a></li>
+                <li><a href="#section2">测试</a></li>
+                <li><a href="#section3">解锁刷入镜像</a></li>
+                <li><a href="#section4">FAIL初步确定与简单分析方法</a></li>
+            </ul>
+        </div>
+        <div class="intro-and-content">
+            <h2>引言</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>gms的测试知识是随着安卓版本的发布而改变的,
+目前到达android 15版本,这个只是根据我个人工作经验编写，并非最新文档，如有错误欢迎欢指正，谢谢
+QQ:1737660582
+                </code></pre>
+            </div>
+            <h2 id="section1">一、什么是GMS</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+GMS：
+1、全称Google Mobile Service，谷歌移动服务，是Google安卓系统的核心，是Google开发并推动Android 的动力，也是Android 系统的灵魂所在。
+2、其包含目前提供有Search、Search by Voice、Gmail/Google Mail、Contact Sync、CalendarSyGMSnc、Maps、Street View、YouTube、Google Play(原名为Android Market)服务。
+3、如果需要在Device上预置GMS应用，需要通过Google的认证，包括CTS、GTS测试以及Google自身的商务考量。
+4、谷歌GMS服务包括了搜索类、邮件服务类、联系人日历同步类、社交聊天类、地图导航类以及应用下载。可以说囊括了我们日常在手机上使用的几乎所有服务。由此可见，谷歌GMS服务是Android智能手机的核心。
+5、虽然现在有大量的应用，具备GMS服务的功能，但作为谷歌原生的移动应用服务，GMS预置的服务具有稳定性好、兼容性好以及更新及时的主要特点。
+GMS 授权:
+Android 系统是开源的，但是Google 针对GMS 所提供的服务却是收费的，需要授权，即厂商需要获得GMS 认证，才能获得授权来使用这些服务。
+                </code></pre>
+            </div>
+            <h3>什么是3PL</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>3PL是谷歌的指定测试实验室，为谷歌提供验收测试服务。谷歌在每年都会对3PL实验室进行审核
+主要内容包括：
+    1、Keybox申请，白名单开通，GOTA账号添加；
+    2、OEM/ODM设备商MADA有效性确认；
+    3、核心应用内置是否符合要求（message，chrome，google，youtube，Duo…）；
+    4、Google app属性配置检查；
+    5、品牌认证（开机动画，彩盒logo和法律声明符合Google要求）；
+    6、测试套件执行（CTS，GTS，VTS，CTSonGSI，CTS Verifier…）；
+    7、豁免项确认；
+    8、提交认证申请到Google；
+    9、认证结果通知
+                </code></pre>
+            </div>
+            <h3>XTS 部分常用名词解释</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+MADA：
+    MADA协议全称：Mobile Application Distribution Agreement，中文名称是：移动应用软件分发协议，是谷歌跟使用Android系统的厂商签定的一个协议。根据这项协议，手机厂商在推出采用Android系统的设备前，必须预装所有的Google应用，而且要把Google Search、Google Play放在手机的首屏里，并以Google Search作为默认的搜索引擎，其实说白了就是：你要出口到国外赚钱->必须要内置GMS->要签属MADA协议（要Google我同意才可以）。
+MBA:
+    MBA（Mobile Bundle Apps）安全漏洞政策对于违反MBA安全漏洞政策的应用，构建测试套件（BTS）发出WARN（警告）。合作伙伴必须在披露之日起90天内解决此问题。如果问题仍未解决，则状态会在90天后自动变为ALERT（警报），并导致构建批准被阻止。当BTS发出WARN（警告）时，除了Android合作伙伴批准（APA）中的消息外，还会为您分配一个错误，以通知您违规行为。
+RSA与RSA协议：
+    rsa：自适应搜索广告（RSA），RSA是将搜索广告模式支持到自动化的转变，使用RSA的用户可以根据搜索的关键词像搜索用户展示更丰富的文字信息组合内容。广告主只需要输入多个合适的标题以及广告内容即可，广告平台将会根据系统学习逐渐摸索出最好的广告内容组合来向搜索用户展示，通过可拆分的组合使其更贴近潜在用户想点击的广告来提升广告效果。
+    rsa协议：谷歌rsa搜索分成协议，谷歌向安卓设备制造商支付一笔费用，让他们在手机上只预装谷歌搜索。欧盟监管机构认为，该协议将谷歌的竞争对手排除在外,即手机预制Google Search与chrome
+KEYBOX:
+    google key：谷歌提供的 keybox 是 attestion key 的集合，会包含 n 个 attestion key,通过
+    DeviceID 来区分，在配置时选择不同的 DeviceID 可以进行不同的 attestion key 配置。
+    详细可以查看：https://blog.csdn.net/qq_42713883/article/details/102478059
+    Widevine DRM Key:DRM数字版权保护密钥 
+    详细解释：http://www.ctc-qualitylab.com/news/xingyezixun/831.html
+    RKP：Remote Key Provisioning
+    CSR：Certificate Signing Request
+    Device Attestation ID：设备认证信息
+DMA：
+    数字市场法案 是欧盟的一项法律。根据 DMA，在欧盟，Google 为您提供了关联某些 Google 服务的选择。
+    参考：https://support.google.com/accounts/answer/14202510?hl=en&ref_topic=14202891&sjid=6419014191271171681-AP
+实验室json文件或实验室key：拿到google授权后，3pl实验室、手机品牌厂商、芯片平台厂商等搭建的符合google要求的测试环境，不同厂商提供给第三方方案公司在测试gts的访问厂商搭建测试环境文件的一个接口加密密钥              </code></pre>
+            </div>
+            <h3>GMS认证目的与认证要求</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+GMS认证目的
+1、提高产品android系统的兼容性和稳定性
+2、授权Google的手机APP和服务
+3、授权使用Android LOGO
+4、产品可以进入欧美市场
+GMS认证要求
+1、必须申请与Google签署MADA协议（网站操作）
+2、产品必须使用7.0以上的安卓版本
+3、产品必须依次通过CTS测试、CTS Verify测试以及GTS测试
+4、产品还可以通过CE、FCC、BT以及WIFI等硬件认证（这一部分不是GMS认证的硬性指标）
+GMS认证流程
+1、申请谷歌MADA协议
+2、产品做硬件测试
+3、提交测试报告给谷歌审核
+4、获得谷歌认证授权
+                </code></pre>
+            </div>
+            <h3>GMS测试认证版本</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+测试版本分为IR（初次送测版本），MR（维护版本）以及SMR（安全补丁版本）。MR又包含EMR（紧急维护版本） 
+GRF(vendor冻结的批复方式，不同软件共用相同vendor)、VBA（Variant Build Approval），GRF、VBA、IR、MR 、SMR的区别有以下几点：
+1、IR可以修改需求，必须更新gms包，安全补丁
+2、MR可以修改需求，可以不用更新gms包，必须更新安全补丁
+3、SMR不可以修改需求，不可以更新gms包，只能更新安全补丁
+IR 、MR、SMR测试命令的区别：
+1、MR/SMR�STS用这个命令�sts-dynamic-incremental�，IR�STS用这个命令�sts-dynamic-full
+2、MR/IR GTS用run gts –s xxx(全测)，SMR用run gts-smr –s xxx
+3、MR/IR CTS用run cts –s xxx（全测）,SMR只测试模块run cts -m CtsSecurityTestCases
+##GRF版本 
+展锐平台：Vendor Reuse Program 
+审批与测试流程
+1、OEM应先确保APA网站中有一个已经获批且带有完整xTS报告集的源构建。
+2、OEM提交符合上述条件的完整目标构建二进制文件以进行Firmware分析。
+3、Google自动验证源构建与目标构建中的vendor/odm/boot分区digests是否匹配。如果匹配，APA网站中的目标构建会表明SAME_VENDOR_PARTITIONS作为代表类型。整个验证流程通常需要花费5小时，具体取决于所提交构建的规模。
+4、待系统针对目标构建显示SAME_VENDOR_PARTITIONS作为构建审批代表类型时，OEM向APA网站提交CTS-System、CTS Verifier-System以及GTS、GTS-Interactive和STS的测试结果。
+注意：此流程自CTS 13 R7和CTS 14 R3版本起生效。
+优点：简化了重用vendor分区的构建审批测试且减少了测试执行时间。
+功能总结：
+1、目标构建(target build)必须与相关构建(reference build)具有相同的vendor分区
+2、适用于具有相同vendor分区哈希值的A13及更高版本
+3、符合要求的目标构建可以只运行与system相关的CTS和CTS-Verifier测试。
+MTK平台：GRF(Vendor Freeze)Program 称呼与冻结的方式与范围不同但是对于XTS的测试的报告都是一样的
+参考文件：
+\\172.16.1.78\Share\pub\GMS\05-GMS内部资料\02_Sprd文档\20241018Android 15公开课PPT\09-Android 15 xTS Case变化和认证.pptx
+\\172.16.1.78\Share\pub\GMS\05-GMS内部资料\07-MTK文档\Android_T_Vendor_Freeze.pdf
+##VBA 版本
+Identical build （相同版本构建）
+所有only-read分区、各分区VBMeta Digest均与已批复的主版本相匹配，则可通过VBA批复
+Identical standard partitions（相同标准分区的版本）
+若不同版本之间拥有如下相同标准分区（ system , system-ext , product ,
+vendor , odm , boot ）、相同的分区摘要(VBMeta Digest)、相同的预置privilege
+app、相同的priv-app权限，则可通过VBA批复
+Privileged apps (当前我司使⽤该类型VBA）该VBA软件类型可将部分priv-app预置在除标准分区( system , system_ext , product , vendor , odm , boot )之外的product分区或者其他验证分区；该VBA
+类型仅适⽤于MR的衍⽣版本，前提是此前已有批复过具有相同软件配置和预置应⽤的版本，除Product分区外，还包含⼀个已批复的具有公共分区的主版本
+VBA适⽤软件阶段:
+除IR版本之外的IR、MR软件适⽤
+测试报告：
+IR:BTS+GTS-variant+checklist+GTSI+送测材料 
+MR:BTS+GTS-variant
+文件生成vbmetaDeviceInfo.deviceinfo.json
+1.（需要确认如下镜像文件在软件同级目录中boot.img、vbmeta_system.img、vbmeta_vendor.img），将avbtool在软件同级目录中
+2.python avbtool print_partition_digests --image E:Software\软件版本\vbmeta.img > vbmetaDeviceInfo.deviceinfo.json --json 
+
+备注：GTS-variant报告上传前需添加vbmetaDeviceInfo.deviceinfo.json⽂件⾄报告device-info-files路径内
+若各市场vbmetadeviceinfo分区摘要信息完全⼀致，则⽆需添加
+vbmetaDeviceInfo.deviceinfo.json⽂件⾄报告内
+具体操作请查看文件：//172.16.1.78/Share/pub/GMS/05-GMS内部资料/05_VBA/VBA批复流程文档.pdf
+
+                </code></pre>
+            </div>
+            <h3>GKI与GSI的不同</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+GKI与GSI的不同：
+ GSI：通用系统映像 (GSI) 是指已针对 Android 设备调整配置的系统映像。GSI 被视为“纯 Android”实现，它包含未经修改的 Android 开源项目 (AOSP) 代码，任何搭载 Android 9 或更高版本的 Android 设备都能顺利运行这种代码,
+GKI:通用内核 (ACK) 是所有 Android 产品内核的基础。供应商内核和设备内核位于 ACK 的下游。供应商通过修改内核源代码并添加设备驱动程序，添加了对 SoC 和外围设备的支持。这些修改内容可能很多，以至于设备上运行的代码中有多达 50% 是树外代码（并非来自上游 Linux 和 AOSP 通用内核）
+GKI是google开出来解决碎片化的问题的，目前来说GKI只在内核版本大于4.19，且是arm64架构的机器才会在测试中刷入GKI1.0内核版本大于5.4小于5.10刷boot-5.4.img与GKI 2.0 内核版本大于5.10一般是集成在软件中不需要单独刷，如果要单独刷，根据内核版本刷boot-5.15.img或boot-5.10.img
+                </code></pre>
+            </div>
+            <h2>测试报告了解</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+GMS测试共分为两类：手工测试和自动化工具测试
+手工测试有：规范测试（AAPT(安卓14上新增测试项)，CDD，MADA，以及各种参加的协议等）、CTSV测试
+自动化工具有：CTS GTS GS VTS STS GOATS（弃用安卓10与11go项目使用） APTS（安卓12-15go项目使用） gts-interactive（安卓13-15测试）gts-root（安卓15上新增加测试报告），
+其中GOATS和APTS都是测试性能，Android11使用GOATS，Android12使用APTS(APTS 目前不在apts工具中测试了在gts工具中测试)，只有go版本才需要测试性能。
+测试的版本阶段分为：首版(IR/LR)测试、MR测试、SMR测试，即软件占坑、修改需求和修复bug、维护安全补丁三个阶段。
+SMR软件需注意：必须配置base_os属性，其值为最近一版MR的fingerprint。可使用adb查看：
+adb shell getprop ro.build.version.base_os
+adb shell getprop | grep "fingerprint"
+                </code></pre>
+            </div>
+            <h2 id="section2">二、测试</h2>
+            <h3>测试前设备准备</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+测试前手机设置:
+1.将设备恢复出厂设置：新烧的软件无须此操作 
+2.将设备的语言设置为英语（美国）：非常重要！GMS工具不适配其他语言,会引起失败项 
+3.打开位置信息设置：设置 > 位置信息 > 开启 
+4.锁屏密码或图案清除：设置 > 安全 > 屏幕锁定 > 无 
+5.启用 USB 调试：设置 > 开发者选项 > USB 调试。 
+6.时间设置为 12 小时格式：设置 > 日期和时间 > 使用 24 小时制 > 关闭 
+7.依次选择：设置 > 开发者选项 > 不锁定屏幕 > 开启 
+8.依次选择：设置 > 开发者选项 > 通过 USB 验证应用 > 关闭 
+9.连接WLAN 翻墙网络 
+10.将 CTS 媒体文件复制到电脑/tmp目录下并更名为android-cts-media(跑媒体时找不到会自动到网上下,但是太大，很难下完，延误测试时间)
+11.Android 13与更高的安卓版本 Settings > Developer options > Allow Mock Modem > On.
+                </code></pre>
+            </div>
+            <h3>测试命令</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>cts：
+全测命令：run cts --shard-count 3 -s 手机SN号 -s 手机SN号 -s 手机SN号 
+单测模块：run cts -s 手机SN号 -m 模块名
+单测case：run cts -s 手机SN号 -m 模块名 -t 测试项
+retry 重试命令：run retry -s 手机SN号 --retry 28 --retry-strategy RETRY_ANY_FAILURE --max-testcase-run-count 3  
+单测重试命令：run cts -s 手机SN号 -m 模块名 -t 测试项 --retry-strategy RETRY_ANY_FAILURE --max-testcase-run-count 3
+gts：
+run gts -s 手机序列号
+gts-interactive：(安卓12-14的旧项目使用user软件版本测试，安卓15使用user刷vendor-boot-debug.img测试)
+run gts-interactive -s 手机序列号
+gts-root:(安卓15新增加测试报告使用user刷vendor-boot-debug.img测试)
+run gts-root
+gsi：（需刷入Google原生镜像，工具使用CTS工具)
+run cts-on-gsi -s 手机sn号
+vts：（在刷入镜像基础上还需刷入boot-debug.img获取root权限)
+run vts -s 手机序列号
+sts：（使用对应手机安全补丁的工具)
+run sts-dynamic-full -s 手机序列号 （IR与LR使用，或者摸底整测时使用）
+run sts-dynamic-incremental -s 手机序列号 （MR与SMR使用）
+apts:
+run apts -s 手机序列号 （使用user软件或者userroot软件）
+run test/approval-go -s 手机序列号 --fingerprint-swap 项目user版本的fingerprint （弃用）
+goats:
+run goats -s 手机序列号 -f 项目user版本的fingerprint（弃用）
+ctsv:
+手工测试
+多台手机时可使用--shard-count 后跟设备数量进行多台跑测，例
+run cts --shard-count 3 -s 手机序列号1 -s 手机序列号2 -s 手机序列号3
+##### 报告及log:
+报告会生成在工具目录的results文件夹下，log会生成在工具目录的logs文件夹下，以开始跑报告的时间进行命名并排序。
+##### 复测命令：
+统一为"run retry -s 手机序列号 --retry 报告序列号"， 也可加上--shard-count进行多台复测
+注：goats和apts不可复测
+##### 如何屏蔽模块：
+在特殊情况下，需要屏蔽某些模块进行测试，如复测报告时会出现这种情况，这个模块的测试项已经确定测不过了，但复测时仍然会跑起来，所以需要这个命令去屏蔽掉这个测试项
+--exclude-filter
+还可以使用命令引入模块：--include-filter 
+测试时自动寻卡：
+多台机器在跑时，可以其中一台插上SIM卡，然后使用以下命令即可自动去匹配有SIM卡的机器：
+--enable-token-sharding
+测试需要看清楚log时：
+--log-level-display 以指定的最低日志级别运行，显示为 STDOUT。有效值：[ VERBOSE, DEBUG, INFO, WARN, ERROR, ASSERT]。
+ITS测试请参考环境配置中的测试配置文件与运行命令测试
+
+                </code></pre>
+            </div>
+            <h2 id="section3">三、解锁刷入镜像</h2>
+            <h3>解锁</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>##### unlock(刷镜像需要先解锁,已经解锁的无需执行此操作)
+展锐平台：(需使用传音专用脚本,位于78服务器:\pub\GMS\07-GMS镜像文件\AndroidRUnlockTool)
+adb reboot bootloader(重启至bootloader界面,可能会做自动重启功能,需要快速输入以下指令)
+./fastboot oem get_identifier_token (会得到一串数字)
+./signidentifier_unlockbootloader.sh 3236353233323235303231393534 rsa4096_vbmeta.pem sign.bin(使用上一步得到的一串数字)
+./fastboot flashing unlock_bootloader sign.bin (按音量下键)
+等待完成,需要一定时间
+注意：PEM文件不通用 如项目有更改请更换对应PEM文件
+MTK平台：
+adb reboot bootloader
+fastboot flashing unlock(按音量上键)
+提示pass跳转回bootloader界面即可进行其他操作
+                </code></pre>
+            </div>
+            <h3>GSI、VTS，GTS-ROOT刷入镜像</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>##### gsi刷入镜像：
+fastboot reboot fastboot(重启至fastboot界面)
+fastboot delete-logical-partition product_a
+fastboot create-logical-partition product_a 0(清空数据避免空间不足)
+fastboot erase userdata(清除用户数据)
+fastboot flash system system.img(gsi刷入谷歌android原生镜像)
+
+##### VTS刷入boot-debug：（boot-debug.img会随着软件编译生成，每版都不相同)
+fastboot reboot bootloader(重启至bootloader界面)
+fastboot flash boot boot-debug.img
+fastboot reboot
+
+##### 支持gki1.0 gsi刷入镜像：(GKI1.0 kernel内核版本大于4.19小于5.10之间 )(弃用安卓14后不再使用GKI1.0)
+
+fastboot reboot fastboot(重启至fastboot界面)
+fastboot delete-logical-partition product_a
+fastboot create-logical-partition product_a 0(清空数据避免空间不足)
+fastboot erase userdata(清除用户数据)
+fastboot flash system system.img(gsi刷入谷歌android原生镜像)
+fastboot flash boot_a boot-5.4.img（这个在安卓12的aosp arm64 镜像包中）
+
+
+##### 支持gki2.0 gsi刷入镜像：(GKI2.0 当kernel内核大于5.10小于5.15时不刷gki)
+
+fastboot reboot fastboot(重启至fastboot界面)
+fastboot delete-logical-partition product_a
+fastboot create-logical-partition product_a 0(清空数据避免空间不足)
+fastboot erase userdata(清除用户数据)
+fastboot flash system system.img(gsi刷入谷歌android原生镜像)
+
+##### 支持gki2.0 gsi刷入镜像：(GKI2.0 当kernel内核大于5.15)(弃用安卓14后不再使用这种方案)
+fastboot reboot fastboot(重启至fastboot界面)
+fastboot delete-logical-partition product_a
+fastboot create-logical-partition product_a 0(清空数据避免空间不足)
+fastboot erase userdata(清除用户数据)
+fastboot flash system system.img(gsi刷入谷歌android原生镜像)
+fastboot flash boot_a boot-5.15.img（这个要单独打包发出来刷）
+
+##### 支持gki1.0与gki2.0 VTS刷入（在刷入GSI的基础上）
+fastboot reboot bootloader（bootloader界面)
+fastboot flash vendor_boot_a vendor_boot-debug.img(MTK与展讯平台都在软件包中，)
+
+#####Andorid15 GTS-ROOT与GTSI（直接使用user软件解锁后刷入vendor_boot-debug.img）
+fastboot reboot bootloader
+fastboot flash vendor_boot_a vendor_boot-debug.img(MTK与展讯平台都在软件包中，)
+
+                </code></pre>
+            </div>
+            <h2 id="section4">四、XTS FAIL初步确定与简单分析方法</h2>
+            <h3>初步确定XTS测试FAIL</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+一份测试报告提供出来，它的失败项全都需要开发人员分析吗？往往不是这样。经验来说这其中会有许多的环境相关项，
+首先我们要确认失败项，所以我们一般都会先简单尝试以下几种方法：
+1、硬件方面的（如相机，传感器，卡项的等），相机的一般会采用打光，调整光的亮度，传感器方面的一般会采用校准传感器，卡项的，一般会先用白卡与sim卡复测，再考虑用pab工具，或旧工具等
+2、网络方面的，（如ipv6，媒体，下载与更新apk），可以考虑换vpn，换节点、或者是这个链接节点服务器不支持这些协议，或者是豁免等，
+3、音频方面的，（主要是cv中音频测试项）如otg供电不足导致读不到数据，可以考虑提供外部供电，外部环境嘈杂，导致部分音频项测试失败，或着单独提供耳机播放声音等方法
+4、gps，蓝牙方面的，先考虑是否是手机搜不到星，换手机，把gps放大器离手机近一点，蓝牙未打开，搜不到蓝牙，蓝牙的地址冲突等
+5、还有手机在整测后改变了状态后，复测失败等可以考虑重置手机，还有一些apk要在重置后在开机向导连WiFi等操作 
+6、EEA的部分测试项要在开机向导连接WiFi登录EEA测试账号，选择Google为默认搜索引擎等
+7、查找豁免文档中是否有相对应的豁免项
+8、换电脑测试，有可能是本身的电脑环境没有装完整
+9、更新特定的apk可以测试pass
+10、询问开发最近是否修改过最近的相关问题等
+11、google改变了测试策略，未释放豁免文档等
+基本上，像cts这样测试套件自动化的测试，调整尽可能ok的环境，恢复出厂、retry多次、至失败项不再减少时，可以认为是真正的失败项了。就可以发出失败项报告，安排对应模块开发人员分析。为开发人员提供mtklogs或ylog，报告logs，与报告。
+                </code></pre>
+            </div>
+            <h3>FAQ查询（常见问题解答）</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+目前有六个查询地址:
+1、本地FAQ
+企业微信链接：
+https://doc.weixin.qq.com/sheet/e3_AH0AnAYGADAhAVK8mpwRD2Vqpa4uK?scode=AJoAtwdzABA8XZ0uxdAH0AnAYGADA&tab=BB08J2
+2、MTK FAQ
+https://online.mediatek.com/apps/quickstart/QS00017
+3、展锐FAQ
+https://unisupport.unisoc.com/faq
+4、google issue tracker
+https://issuetracker.google.com/issues?q=cts
+5、Android Open Source Project
+https://android-review.googlesource.com/q/status:open+-is:wip
+6、jira
+http://jira-ex.transsion.com:6001/secure/Dashboard.jspa
+                </code></pre>
+            </div>
+            <h3>观察法</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>GMS测试时，测试机器会被测试指令所控制。通过adb 命令点击、查看设备信息等。
+所以，观察机器在测试过程中界面的跳转，可以很好的理解测试流程。(在结合代码分析，此法可以事半功倍)
+                </code></pre>
+            </div>
+            <h3>横纵向对比</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+若遇到FAIL，首先可查看之前的测试版本是否可PASS，以确保是否是后期改出来的FAIL。
+也可使用最新软件测试该FAIL是否依然存在。
+其次，可对比同平台其他项目是否有问题，若没有，可结合观察法查看PASS的测试现象。
+若同平台都有问题，最后可对比不同平台，确认问题点是所有平台都有。
+                </code></pre>
+            </div>
+            <h3>分析Log</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+分为两类：一为测试工具抓取的log；二为打开Ylog或MTKlog开关抓取的log
+查看测试CASE中的抛出的异常现象
+                </code></pre>
+            </div>
+            <h3>反编译</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+1、测试APK反编译，跟踪代码逻辑
+2、扩展CTS源码编译
+                </code></pre>
+            </div>
+            <h3>提Eservice、CQ</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                <pre><code>
+1、描述清楚当前的问题现象，使用工具，当前的分析结果，提供单测报告以及对应的ylog或mtkLog
+2、Eservice或CQ及时跟踪。
+                </code></pre>
+            </div>
+
+
+        </div>
+    </div>
+    </div>
+
+    <script>
+        function copyCode(button) {
+            var codeBlock = button.parentElement.querySelector('pre code');
+            var textToCopy = codeBlock.textContent;
+
+            // 创建一个临时的textarea元素
+            var textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+
+            // 选中并复制文本
+            textarea.select();
+            document.execCommand('copy');
+
+            // 移除临时的textarea元素
+            document.body.removeChild(textarea);
+
+            // 更改按钮文本为“Copied!”
+            button.textContent = 'Copied!';
+
+            // 2秒后恢复按钮文本
+            setTimeout(function() {
+                button.textContent = 'Copy Code';
+            }, 2000);
+        }
+        // 为所有带有.code-block类的元素添加点击事件监听器
+        document.querySelectorAll('.code-block').forEach(function(codeBlock) {
+            codeBlock.addEventListener('click', function() {
+                // 切换选中状态
+                this.classList.toggle('selected');
+            });
+        });
+    </script>
+</body>
+</html>
+

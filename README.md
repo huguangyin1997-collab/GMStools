@@ -14,8 +14,10 @@ GMStools 是一款面向 Android 设备测试、调试与刷机的桌面工具�
 | **CTS Verifier 数据库** (Ctsverifierdb) | 通过 ADB 导出/导入 CTS Verifier 的 SQLite 测试结果，支持 Excel 增量对比更新 |
 | **模块对比** (Modulecomparison) | 对比新旧 XML / HTML / TXT 文件中的模块差异，可视化显示双方独有模块 |
 | **SMR 对比** (SMRComparison) | Feature 级与 Package 级的 SMR 差异分析，输出 HTML 对比报告，支持严格逐行对比与智能语义对比 |
-| **CV 自动化** (CVAutomation) | 设备选择 → 目录选择 → 自动执行测试流程的框架界面 |
+| **CV 自动化** (CVAutomation) | 设备选择 → 目录选择 → 自动执行测试流程的框架界面（🚧 开发中，源码暂未公开） |
 | **解锁与镜像** (Autounlock) | 最多 4 台设备并行操作，支持 MTK 解锁、展讯 RSA 签名解锁、刷 system / vendor_boot 镜像 |
+| **GMS 简析** (GMSAnalysis) | GMS 测试基础知识文档，以 WebEngine 渲染 HTML，透明背景与桌面融合 |
+| **环境搭建** (EnvironmentSetup) | Ubuntu-Android16-XTS 测试环境配置指南，WebEngine 渲染，透明背景 |
 | **关于 / 更新** (Concerning) | 版本信息与在线自动更新（GitHub Releases，含 SHA256 校验） |
 
 ---
@@ -25,7 +27,7 @@ GMStools 是一款面向 Android 设备测试、调试与刷机的桌面工具�
 | 项目 | 要求 |
 |------|------|
 | Python | 3.10+ |
-| 操作系统 | Windows 10+ / Ubuntu 20.04+ |
+| 操作系统 | Windows 10+ / Ubuntu 24.04 |
 | ADB 工具 | 外置于 `platform-tools/` 目录（应用会自动检测） |
 
 ---
@@ -48,6 +50,7 @@ pip install -r requirements.txt
 | 库 | 版本 | 用途 |
 |----|------|------|
 | pyqt6 | 6.10.2 | GUI 框架 |
+| PyQt6-WebEngine | 6.10.2 | Web 渲染引擎（GMS 简析、环境搭建页面的 HTML 展示） |
 | openpyxl | 3.1.5 | Excel 读写（报告导出 / CTS Verifier DB） |
 | beautifulsoup4 | 4.14.3 | HTML 解析（模块对比、SMR 对比） |
 | Pillow | 12.1.1 | 图片处理（图标、背景图） |
@@ -111,13 +114,16 @@ GMStools/
 ├── theme/                      # 主题系统
 │   └── miku_theme.py           # Miku 主题色 (#39C5BB) 与 QSS 样式
 │
-└── pages/                      # 功能页面（9 个模块）
+└── pages/                      # 功能页面（11 个模块）
     ├── Autounlock/             # 解锁与镜像刷入
     ├── CheckupReport/          # 体检报告分析
     ├── Concerning/             # 关于 / 在线更新
     ├── Ctsverifierdb/          # CTS Verifier 数据库
     ├── CVAutomation/           # CV 自动化
     ├── Disclaimer/             # 免责声明
+    ├── EnvironmentSetup/       # 环境搭建（WebEngine 渲染 HTML）
+    ├── GMSAnalysis/            # GMS 简析（WebEngine 渲染 HTML）
+    ├── html/                   # HTML 文档（加密存储）
     ├── Modulecomparison/       # 模块对比
     ├── Newfeatures/            # 新功能展示
     └── SMRComparison/          # SMR 对比（最复杂模块，约 20 个源文件）

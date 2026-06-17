@@ -1,5 +1,5 @@
 # constants.py
-APP_VERSION = "26.6.5"
+APP_VERSION = "26.6.17"
 GITHUB_API_URL = "https://api.github.com/repos/huguangyin1997-collab/GMStools/releases/latest"
 CACHE_FILE = "version_cache.json"
 

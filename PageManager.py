@@ -1,8 +1,10 @@
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QStackedWidget
 from left_menu import LeftMenu
 from pages import (
     CheckupReport, Ctsverifierdb, Modulecomparison, Concerning,
-    SMRComparison, CVAutomation, Disclaimer, Autounlock, Newfeatures
+    SMRComparison, CVAutomation, Disclaimer, Autounlock, Newfeatures,
+    GMSAnalysis, EnvironmentSetup
 )
 
 class PageManager:
@@ -20,6 +22,7 @@ class PageManager:
         self.left_menu = LeftMenu(self.parent_widget)
         self.left_menu.item_clicked.connect(self.on_menu_item_clicked)
         self.stacked_widget = QStackedWidget(self.parent_widget)
+        self.stacked_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
     def create_pages(self):
         # 原有页面
@@ -38,9 +41,16 @@ class PageManager:
         self.pages["CVAutomation"] = CVAutomation()
         self.stacked_widget.addWidget(self.pages["CVAutomation"])
 
-        # 新增两个页面
+        # 新增页面
         self.pages["Autounlock"] = Autounlock()
         self.stacked_widget.addWidget(self.pages["Autounlock"])
+
+        # GMS简析、环境搭建
+        self.pages["GMSAnalysis"] = GMSAnalysis()
+        self.stacked_widget.addWidget(self.pages["GMSAnalysis"])
+
+        self.pages["EnvironmentSetup"] = EnvironmentSetup()
+        self.stacked_widget.addWidget(self.pages["EnvironmentSetup"])
 
         self.pages["Newfeatures"] = Newfeatures()
         self.stacked_widget.addWidget(self.pages["Newfeatures"])
@@ -58,19 +68,21 @@ class PageManager:
         self.left_menu.add_item("SMRComparison", "SMR对比")
         self.left_menu.add_item("CVAutomation", "CV自动化")
         self.left_menu.add_item("Autounlock", "解锁与镜像")
+        self.left_menu.add_item("GMSAnalysis", "GMS简析")
+        self.left_menu.add_item("EnvironmentSetup", "环境搭建")
         self.left_menu.add_item("Newfeatures", "新功能")
         self.left_menu.add_item("Disclaimer", "免责声明")
         self.left_menu.add_item("Concerning", "关于我们")
 
-        # 默认显示免责声明页面（索引7）
-        self.stacked_widget.setCurrentIndex(7)
+        # 默认显示免责声明页面（索引9）
+        self.stacked_widget.setCurrentIndex(9)
 
     def on_menu_item_clicked(self, key):
         if key == "Disclaimer":
             disclaimer_page = self.pages.get("Disclaimer")
             if disclaimer_page:
                 disclaimer_page.set_readonly_mode(self.disclaimer_accepted)
-            self.stacked_widget.setCurrentIndex(7)
+            self.stacked_widget.setCurrentIndex(9)
             self.left_menu.set_active(key)
             return
 
@@ -91,9 +103,11 @@ class PageManager:
             "SMRComparison": 3,
             "CVAutomation": 4,
             "Autounlock": 5,
-            "Newfeatures": 6,
-            "Disclaimer": 7,
-            "Concerning": 8
+            "GMSAnalysis": 6,
+            "EnvironmentSetup": 7,
+            "Newfeatures": 8,
+            "Disclaimer": 9,
+            "Concerning": 10
         }
         if key in page_mapping:
             self.stacked_widget.setCurrentIndex(page_mapping[key])
@@ -110,9 +124,11 @@ class PageManager:
             "SMRComparison": 3,
             "CVAutomation": 4,
             "Autounlock": 5,
-            "Newfeatures": 6,
-            "Disclaimer": 7,
-            "Concerning": 8
+            "GMSAnalysis": 6,
+            "EnvironmentSetup": 7,
+            "Newfeatures": 8,
+            "Disclaimer": 9,
+            "Concerning": 10
         }
         if page_name in page_mapping:
             self.stacked_widget.setCurrentIndex(page_mapping[page_name])
