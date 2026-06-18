@@ -398,9 +398,11 @@ class UpdateManager(QObject):
     def perform_update(self, new_files_dir):
         if getattr(sys, 'frozen', False):
             install_dir = os.path.dirname(sys.executable)
+            exe_basename = os.path.basename(sys.executable)  # 动态获取，不再硬编码
             old_pid = os.getpid()
         else:
             install_dir = os.path.dirname(os.path.abspath(__file__))
+            exe_basename = os.path.basename(sys.executable)  # 开发环境用 python
             old_pid = os.getpid()
 
         is_windows = sys.platform == "win32"
@@ -423,8 +425,8 @@ if not exist "{src}\\*" (
     exit /b 1
 )
 
-echo %DATE% %TIME% 强制结束 GMStools.exe 和 adb.exe ... >> "{log_file}" 2>&1
-taskkill /f /im GMStools.exe >> "{log_file}" 2>&1
+echo %DATE% %TIME% 强制结束 {exe_basename} 和 adb.exe ... >> "{log_file}" 2>&1
+taskkill /f /im {exe_basename} >> "{log_file}" 2>&1
 taskkill /f /im adb.exe >> "{log_file}" 2>&1
 timeout /t 2 /nobreak >nul
 
@@ -455,14 +457,14 @@ set PYTHONPATH=
 set TMP=%USERPROFILE%\\AppData\\Local\\Temp
 set TEMP=%USERPROFILE%\\AppData\\Local\\Temp
 
-set "EXE={install_dir}\\GMStools.exe"
+set "EXE={install_dir}\\{exe_basename}"
 echo %DATE% %TIME% 启动新版本: !EXE! >> "{log_file}" 2>&1
 start /B "" "!EXE!" >nul 2>&1
 
 echo %DATE% %TIME% 等待 15 秒让新程序初始化... >> "{log_file}" 2>&1
 timeout /t 15 /nobreak >nul
 
-tasklist /fi "imagename eq GMStools.exe" >> "{log_file}" 2>&1
+tasklist /fi "imagename eq {exe_basename}" >> "{log_file}" 2>&1
 
 copy "{log_file}" "{install_dir}\\update.log" /Y
 
@@ -537,8 +539,8 @@ for item in *; do
     cp -rf "$item" "{install_dir}/"
 done
 
-if [ -f "{install_dir}/GMStools" ]; then
-    chmod +x "{install_dir}/GMStools"
+if [ -f "{install_dir}/{exe_basename}" ]; then
+    chmod +x "{install_dir}/{exe_basename}"
     echo "已设置可执行权限"
 fi
 
@@ -546,7 +548,7 @@ cd "{install_dir}"
 rm -rf /tmp/_MEI* "$TMPDIR"/_MEI* 2>/dev/null
 
 echo "启动新版本..."
-env -i DISPLAY="{display}" XAUTHORITY="{xauthority}" DBUS_SESSION_BUS_ADDRESS="{dbus}" XDG_RUNTIME_DIR="{xdg_runtime}" HOME="{home}" USER="{user}" PATH="{path}" LANG="{lang}" ./GMStools > "{app_log_file}" 2>&1 &
+env -i DISPLAY="{display}" XAUTHORITY="{xauthority}" DBUS_SESSION_BUS_ADDRESS="{dbus}" XDG_RUNTIME_DIR="{xdg_runtime}" HOME="{home}" USER="{user}" PATH="{path}" LANG="{lang}" ./{exe_basename} > "{app_log_file}" 2>&1 &
 LAUNCH_PID=$!
 echo "新程序启动PID: $LAUNCH_PID"
 
