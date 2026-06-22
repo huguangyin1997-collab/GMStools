@@ -156,7 +156,7 @@ class UpdateManager(QObject):
                 dlg.exec()
                 return
 
-            latest_version = latest_tag.lstrip('v')
+            latest_version = latest_tag.lstrip('v').lstrip('V')
             release_notes = info.get("body", "暂无更新说明")
             assets = info.get("assets", [])
 
@@ -398,11 +398,12 @@ class UpdateManager(QObject):
     def perform_update(self, new_files_dir):
         if getattr(sys, 'frozen', False):
             install_dir = os.path.dirname(sys.executable)
-            exe_basename = os.path.basename(sys.executable)  # 动态获取，不再硬编码
+            exe_basename = os.path.basename(sys.executable)
             old_pid = os.getpid()
         else:
-            install_dir = os.path.dirname(os.path.abspath(__file__))
-            exe_basename = os.path.basename(sys.executable)  # 开发环境用 python
+            # 开发环境：__file__ 在 pages/Concerning/ 下，向上三级到项目根目录
+            install_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            exe_basename = "app_controller.py"
             old_pid = os.getpid()
 
         is_windows = sys.platform == "win32"
@@ -496,7 +497,7 @@ del "%~f0"
                 self._cleanup_temp()
                 self._reset_check_button()
         else:
-            # Linux 部分（略作修改，与原逻辑一致）
+            # Linux 更新脚本
             log_file = os.path.join(self.temp_dir, "update.log")
             app_log_file = os.path.join(self.temp_dir, "app.log")
             script_path = os.path.join(self.temp_dir, "update.sh")
@@ -510,59 +511,112 @@ del "%~f0"
             lang = os.environ.get('LANG', 'C.UTF-8')
             path = os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin')
             user = os.environ.get('USER', os.environ.get('LOGNAME', ''))
+            # Wayland 相关（Ubuntu 22.04+ 默认使用 Wayland）
+            wayland_display = os.environ.get('WAYLAND_DISPLAY', '')
+            xdg_session_type = os.environ.get('XDG_SESSION_TYPE', '')
+            qt_qpa_platform = os.environ.get('QT_QPA_PLATFORM', '')
+
+            # 构建 env 传递的环境变量
+            env_vars = (
+                f'DISPLAY="{display}" '
+                f'XAUTHORITY="{xauthority}" '
+                f'DBUS_SESSION_BUS_ADDRESS="{dbus}" '
+                f'XDG_RUNTIME_DIR="{xdg_runtime}" '
+                f'HOME="{home}" '
+                f'USER="{user}" '
+                f'PATH="{path}" '
+                f'LANG="{lang}"'
+            )
+            if wayland_display:
+                env_vars += f' WAYLAND_DISPLAY="{wayland_display}"'
+            if xdg_session_type:
+                env_vars += f' XDG_SESSION_TYPE="{xdg_session_type}"'
+            if qt_qpa_platform:
+                env_vars += f' QT_QPA_PLATFORM="{qt_qpa_platform}"'
+
+            # 开发模式下用 python 启动
+            if getattr(sys, 'frozen', False):
+                launch_cmd = f'nohup env -i {env_vars} ./{exe_basename}'
+            else:
+                launch_cmd = f'nohup env -i {env_vars} {sys.executable} {exe_basename}'
 
             with open(script_path, 'w') as f:
                 f.write(f"""#!/bin/bash
 exec > "{log_file}" 2>&1
-echo "脚本开始执行于 $(date)"
+echo "===== GMStools 更新脚本 ====="
+echo "脚本开始时间: $(date)"
 echo "临时目录: {self.temp_dir}"
 echo "新文件目录: {new_files_dir}"
 echo "安装目录: {install_dir}"
 echo "旧程序PID: {old_pid}"
+echo "启动命令: {launch_cmd}"
 
+# 等旧程序退出
 if kill -0 {old_pid} 2>/dev/null; then
     echo "等待旧程序 (PID {old_pid}) 退出..."
-    while kill -0 {old_pid} 2>/dev/null; do
+    for i in $(seq 1 30); do
+        if ! kill -0 {old_pid} 2>/dev/null; then
+            echo "旧程序已退出（等待 $((i * 500))ms）"
+            break
+        fi
         sleep 0.5
     done
-    echo "旧程序已退出"
+    # 如果还没退出，强制杀掉
+    if kill -0 {old_pid} 2>/dev/null; then
+        echo "强制终止旧程序..."
+        kill -9 {old_pid} 2>/dev/null
+        sleep 1
+    fi
 fi
 sleep 1
 
-cd "{new_files_dir}" || {{ echo "无法进入目录 {new_files_dir}"; exit 1; }}
+# 复制新文件
+if [ ! -d "{new_files_dir}" ]; then
+    echo "错误: 新文件目录不存在: {new_files_dir}"
+    exit 1
+fi
+
+cd "{new_files_dir}" || {{ echo "错误: 无法进入目录 {new_files_dir}"; exit 1; }}
 echo "开始复制文件..."
 for item in *; do
     if [[ "$item" == "config.ini" ]]; then
+        echo "  跳过 config.ini（保留用户配置）"
         continue
     fi
-    echo "复制 $item 到 {install_dir}/"
+    echo "  复制: $item -> {install_dir}/"
     cp -rf "$item" "{install_dir}/"
 done
+echo "文件复制完成"
 
+# 设置可执行权限
 if [ -f "{install_dir}/{exe_basename}" ]; then
     chmod +x "{install_dir}/{exe_basename}"
-    echo "已设置可执行权限"
+    echo "已设置可执行权限: {install_dir}/{exe_basename}"
 fi
 
-cd "{install_dir}"
+# 清理旧的 PyInstaller 临时目录
+cd "{install_dir}" || {{ echo "错误: 无法进入安装目录 {install_dir}"; exit 1; }}
 rm -rf /tmp/_MEI* "$TMPDIR"/_MEI* 2>/dev/null
 
+# 启动新版本
 echo "启动新版本..."
-env -i DISPLAY="{display}" XAUTHORITY="{xauthority}" DBUS_SESSION_BUS_ADDRESS="{dbus}" XDG_RUNTIME_DIR="{xdg_runtime}" HOME="{home}" USER="{user}" PATH="{path}" LANG="{lang}" ./{exe_basename} > "{app_log_file}" 2>&1 &
+{launch_cmd} > "{app_log_file}" 2>&1 &
 LAUNCH_PID=$!
 echo "新程序启动PID: $LAUNCH_PID"
 
-sleep 5
-if [ -d /tmp/_MEI* ] || [ -d "$TMPDIR"/_MEI* ]; then
-    echo "解压目录已创建，启动成功"
+# 等几秒检查是否启动成功
+sleep 3
+if kill -0 $LAUNCH_PID 2>/dev/null; then
+    echo "新程序进程存在，启动成功"
 else
-    echo "警告：未发现解压目录，可能启动失败"
-    echo "应用日志："
-    cat "{app_log_file}"
+    echo "错误: 新程序进程已退出！"
+    echo "=== 应用日志 ==="
+    cat "{app_log_file}" 2>/dev/null
+    echo "=== 应用日志结束 ==="
 fi
 
 cp "{log_file}" "{install_dir}/update.log"
-echo "日志已保存到 {install_dir}/update.log"
+echo "更新日志已保存到: {install_dir}/update.log"
 
 echo "{self.temp_dir}" >> "{self.pending_cleanup_file}"
 

@@ -1,12 +1,58 @@
 import sys
 import os
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout
-from PyQt6.QtCore import Qt, QTimer, QSettings
+import ctypes
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QApplication
+from PyQt6.QtCore import Qt, QTimer, QSettings, QAbstractNativeEventFilter
 from PyQt6.QtGui import QPixmap, QPalette, QBrush, QColor, QIcon
 
 from CustomTitle import CustomTitleBar
 from PageManager import PageManager
 from usekey import sign_disclaimer_accepted
+
+
+class _X11IconGuard(QAbstractNativeEventFilter):
+    """X11 Native Event Filter：监听 _NET_WM_ICON 属性变化，
+    一旦被 Chromium 子进程清除/覆盖，立刻恢复。"""
+
+    def __init__(self, restore_callback):
+        super().__init__()
+        self._callback = restore_callback
+        self._atom_net_wm_icon = None
+        self._setup_x11()
+
+    def _setup_x11(self):
+        try:
+            xlib = ctypes.cdll.LoadLibrary('libX11.so.6')
+            display = xlib.XOpenDisplay(None)
+            if display:
+                self._atom_net_wm_icon = xlib.XInternAtom(
+                    ctypes.c_void_p(display), b'_NET_WM_ICON', 1)
+                xlib.XCloseDisplay(ctypes.c_void_p(display))
+        except Exception:
+            pass
+
+    def nativeEventFilter(self, eventType, message):
+        if sys.platform == 'win32' or self._atom_net_wm_icon is None:
+            return False, 0
+        try:
+            # xcb_generic_event_t 结构 (32 bytes):
+            # uint8_t response_type (offset 0)
+            # uint8_t pad0 (offset 1)
+            # uint16_t sequence (offset 2)
+            # ... (varies by event type)
+            # For PropertyNotify (response_type = 28):
+            # uint32_t window (offset 8)
+            # uint32_t atom (offset 16)
+            # ...
+            data = ctypes.string_at(message, 32)
+            response_type = data[0] & 0x7F  # 去掉高位 send_event 标志
+            if response_type == 28:  # PropertyNotify
+                atom = int.from_bytes(data[16:20], 'little')
+                if atom == self._atom_net_wm_icon:
+                    self._callback()
+        except Exception:
+            pass
+        return False, 0
 
 class WindowManager(QMainWindow):
     def __init__(self, disclaimer_already_accepted=False, config_path=None):
@@ -37,6 +83,41 @@ class WindowManager(QMainWindow):
         # 延迟加载背景图片和完整初始化，不阻塞界面显示
         QTimer.singleShot(0, self._complete_initialization)
 
+    def _install_icon_guard(self):
+        """安装 X11 原生事件过滤器，实时监控 _NET_WM_ICON 属性。
+        一旦被外部修改（Chromium 子进程），毫秒级恢复。"""
+        if sys.platform == 'win32' or hasattr(self, '_guard_installed'):
+            return
+        self._guard_installed = True
+        try:
+            win_id = int(self.winId())
+            # 设置 PropertyChangeMask 以接收 PropertyNotify 事件
+            xlib = ctypes.cdll.LoadLibrary('libX11.so.6')
+            disp = xlib.XOpenDisplay(None)
+            if disp:
+                xlib.XSelectInput(ctypes.c_void_p(disp), ctypes.c_ulong(win_id),
+                                  ctypes.c_ulong(0x00400000))  # PropertyChangeMask
+                xlib.XFlush(ctypes.c_void_p(disp))
+                xlib.XCloseDisplay(ctypes.c_void_p(disp))
+            self._icon_guard = _X11IconGuard(self.restoreWindowIcon)
+            QApplication.instance().installNativeEventFilter(self._icon_guard)
+        except Exception:
+            pass
+
+    def _prewarm_webengine(self):
+        """提前创建 WebEngine 实例启动 Chromium 进程，
+        此时icon被干扰后立刻恢复，用户不可见。"""
+        try:
+            from PyQt6.QtWebEngineWidgets import QWebEngineView
+        except ImportError:
+            return
+        try:
+            view = QWebEngineView()
+            view.setHtml("<html></html>")
+            self._prewarm_view = view  # 保持引用防止 GC
+        except Exception:
+            pass
+
     def get_resource_path(self, relative_path):
         try:
             base_path = sys._MEIPASS
@@ -45,12 +126,30 @@ class WindowManager(QMainWindow):
         return os.path.join(base_path, relative_path)
 
     def setWindowIconFromFile(self):
-        icon_path = self.get_resource_path("app.ico")
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
-            print(f"窗口图标已设置: {icon_path}")
-        else:
-            print("警告: 未找到窗口图标文件 app.ico")
+        # 按平台选择图标格式：Linux 优先 png，Windows 用 ico
+        icon_candidates = ['app.png', 'app.ico'] if sys.platform != 'win32' else ['app.ico', 'app.png']
+        for icon_name in icon_candidates:
+            icon_path = self.get_resource_path(icon_name)
+            if os.path.exists(icon_path):
+                icon = QIcon(icon_path)
+                if not icon.isNull():
+                    self._persist_icon = icon  # 保持 Python 引用，防止 GC 回收
+                    self.setWindowIcon(icon)
+                    if not hasattr(self, '_icon_logged'):
+                        self._icon_logged = True
+                        print(f"窗口图标已设置: {icon_path}")
+                    return
+        # 兜底：从 app_miku.jpg / Miku.jpg 生成图标
+        for fallback in ['app_miku.jpg', 'Miku.jpg']:
+            fallback_path = self.get_resource_path(fallback)
+            if os.path.exists(fallback_path):
+                pixmap = QPixmap(fallback_path)
+                if not pixmap.isNull():
+                    icon = QIcon(pixmap)
+                    self._persist_icon = icon
+                    self.setWindowIcon(icon)
+                    return
+        print("警告: 未能加载任何图标文件")
 
     def setup_background(self):
         image_path = self.get_resource_path("Miku.jpg")
@@ -168,10 +267,45 @@ class WindowManager(QMainWindow):
             self._resize_timer.timeout.connect(lambda: self.update_background(smooth=True))
         self._resize_timer.start(150)
 
+    def restoreWindowIcon(self):
+        """跨平台恢复窗口/应用图标（保持 Python 引用防 GC 回收）。"""
+        import ctypes as _ctypes
+        app = QApplication.instance()
+
+        # 所有平台：重新设置窗口级图标
+        self.setWindowIconFromFile()
+
+        if sys.platform == "win32":
+            try:
+                _ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('gmstools.app.1')
+            except Exception:
+                pass
+
+        # 所有平台：重新设置应用级图标，保持引用
+        if app:
+            for icon_name in (['app.ico', 'app.png'] if sys.platform == 'win32' else ['app.png', 'app.ico']):
+                icon_path = self.get_resource_path(icon_name)
+                if os.path.exists(icon_path):
+                    icon = QIcon(icon_path)
+                    if not icon.isNull():
+                        self._persist_app_icon = icon
+                        app.setWindowIcon(icon)
+                        break
+
+        # 强制刷新平台窗口属性
+        try:
+            handle = self.windowHandle()
+            if handle is not None:
+                handle.setIcon(self.windowIcon())
+        except Exception:
+            pass
+
     def showEvent(self, event):
         super().showEvent(event)
         self.update_background()
-        # 移除延迟图标设置，因为已在 __init__ 中设置一次
+        if not hasattr(self, '_icon_set'):
+            self._icon_set = True
+            self.setWindowIconFromFile()
 
     def closeEvent(self, event):
         """窗口直接关闭，不进行任何ADB清理"""

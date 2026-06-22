@@ -18,24 +18,35 @@ class GMSAnalysis(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self._placeholder = self._create_fallback(self._html_path)
+        self._placeholder = self._create_fallback()
         layout.addWidget(self._placeholder)
 
     def showEvent(self, event):
         if not self._loaded:
             self._loaded = True
-            web_view = self._create_web_view(self._html_path)
+            web_view = self._create_web_view()
             if web_view is not None:
+                w = self.window()
+                if w:
+                    w.setUpdatesEnabled(False)  # 防止 Windows 原生窗口切换闪屏
                 layout = self.layout()
                 if layout:
                     layout.replaceWidget(self._placeholder, web_view)
                     self._placeholder.deleteLater()
                     self._placeholder = web_view
+                if w:
+                    w.setUpdatesEnabled(True)
         super().showEvent(event)
+        try:
+            w = self.window()
+            if w and hasattr(w, 'restoreWindowIcon'):
+                w.restoreWindowIcon()
+        except Exception:
+            pass
 
-    def _create_web_view(self, html_path):
+    def _create_web_view(self):
         import os as _os
-        # 设置环境变量
+        html_path = self._html_path
         for sp in sys.path:
             qt6 = _os.path.join(sp, 'PyQt6', 'Qt6')
             if _os.path.isdir(qt6):
@@ -45,7 +56,9 @@ class GMSAnalysis(QWidget):
                     if lib not in lp:
                         _os.environ['LD_LIBRARY_PATH'] = f"{lib}:{lp}" if lp else lib
                 for sub in ('libexec', 'bin'):
-                    proc = _os.path.join(qt6, sub, 'QtWebEngineProcess.exe' if sys.platform == 'win32' else 'QtWebEngineProcess')
+                    proc = _os.path.join(qt6, sub,
+                        'QtWebEngineProcess.exe' if sys.platform == 'win32'
+                        else 'QtWebEngineProcess')
                     if _os.path.exists(proc) and 'QTWEBENGINEPROCESS_PATH' not in _os.environ:
                         _os.environ['QTWEBENGINEPROCESS_PATH'] = proc
                 for sub, var in [('resources', 'QTWEBENGINE_RESOURCES_PATH'),
@@ -63,25 +76,24 @@ class GMSAnalysis(QWidget):
                         PyQt6.__path__.append(sp_pyqt6)
             except ImportError:
                 pass
-
         try:
             from PyQt6.QtWebEngineWidgets import QWebEngineView
         except ImportError:
             return None
         try:
-            web_view = QWebEngineView()
-            web_view.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-            web_view.page().setBackgroundColor(Qt.GlobalColor.transparent)
-            web_view.setStyleSheet("background: transparent")
+            view = QWebEngineView()
+            view.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+            view.page().setBackgroundColor(Qt.GlobalColor.transparent)
+            view.setStyleSheet("background: transparent")
             if os.path.exists(html_path):
-                web_view.load(QUrl.fromLocalFile(os.path.abspath(html_path)))
+                view.load(QUrl.fromLocalFile(os.path.abspath(html_path)))
             else:
-                web_view.setHtml("<p>页面加载失败：文件不存在</p>")
-            return web_view
+                view.setHtml("<p>页面加载失败：文件不存在</p>")
+            return view
         except Exception:
             return None
 
-    def _create_fallback(self, html_path):
+    def _create_fallback(self):
         widget = QWidget()
         widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         layout = QVBoxLayout(widget)
@@ -90,7 +102,8 @@ class GMSAnalysis(QWidget):
         hint.setStyleSheet("color: white; font-size: 16px;")
         hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(hint)
-        file_exists = os.path.exists(html_path)
+        path = os.path.abspath(self._html_path)
+        file_exists = os.path.exists(path)
         if not file_exists:
             tip = QLabel("（HTML 文件不存在）")
             tip.setStyleSheet("color: #e74c3c; font-size: 13px;")
@@ -103,6 +116,6 @@ class GMSAnalysis(QWidget):
             QPushButton:hover { background-color: #2980b9; }
             QPushButton:pressed { background-color: #1c6ea4; }""")
         btn.setEnabled(file_exists)
-        btn.clicked.connect(lambda: webbrowser.open(f"file://{os.path.abspath(html_path)}"))
+        btn.clicked.connect(lambda: webbrowser.open(f"file://{path}"))
         layout.addWidget(btn)
         return widget

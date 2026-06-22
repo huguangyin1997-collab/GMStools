@@ -7,6 +7,9 @@ __pycache__/
 build/
 dist/
 
+# 构建时生成的日期版本文件
+build_info.py
+
 # 构建产物目录
 release_windows/
 release_linux/

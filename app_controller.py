@@ -4,7 +4,7 @@ import ctypes
 import subprocess as _sp
 import traceback
 from PyQt6.QtWidgets import QApplication, QMessageBox, QProgressDialog
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont, QIcon, QPixmap
 from PyQt6.QtCore import QSharedMemory, QSettings, QObject, QEvent, Qt
 from window_manager import WindowManager
 from usekey import verify_disclaimer_accepted
@@ -349,22 +349,115 @@ class AppController(QObject):  # 继承 QObject 以使用事件过滤器
         else:
             return os.path.dirname(os.path.abspath(__file__))
 
+    def _ensure_desktop_file(self):
+        """确保 ~/.local/share/applications/GMStools.desktop 存在。
+        Linux/Wayland 合成器通过 .desktop 文件确定任务栏图标，
+        没有它则 setWindowIcon() 可能无效。"""
+        try:
+            desktop_dir = os.path.join(os.path.expanduser('~'), '.local', 'share', 'applications')
+            desktop_file = os.path.join(desktop_dir, 'GMStools.desktop')
+
+            # 找到图标文件
+            icon_path = None
+            for name in ['app.png', 'app.ico']:
+                p = self.resource_path(name)
+                if os.path.exists(p):
+                    icon_path = os.path.abspath(p)
+                    break
+            if not icon_path:
+                return
+
+            os.makedirs(desktop_dir, exist_ok=True)
+            exec_path = sys.executable if not getattr(sys, 'frozen', False) else os.path.abspath(sys.executable)
+            work_dir = self.get_app_dir()
+
+            content = f"""[Desktop Entry]
+Type=Application
+Name=GMStools
+Comment=Android ADB Tools - GMS Testing
+Exec={exec_path}
+Path={work_dir}
+Icon={icon_path}
+Terminal=false
+Categories=Utility;Development;
+StartupWMClass=GMStools
+"""
+            # 只在内容变化时才写入，避免不必要的时间戳更新
+            old_content = None
+            if os.path.exists(desktop_file):
+                with open(desktop_file, 'r', encoding='utf-8') as f:
+                    old_content = f.read()
+
+            if old_content != content:
+                with open(desktop_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                print(f"✓ 已创建/更新桌面文件: {desktop_file}")
+
+            # 通知桌面环境刷新图标缓存（减少 Wayland 合成器延迟）
+            import subprocess as _sp
+            for cmd in (
+                ['update-desktop-database', desktop_dir],
+                ['gtk-update-icon-cache', os.path.join(os.path.expanduser('~'), '.local', 'share', 'icons'), '-f'],
+            ):
+                try:
+                    _sp.run(cmd, capture_output=True, timeout=5)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"⚠ 创建桌面文件失败: {e}")
+
     def initialize_application(self):
-        # 必须在 QApplication 创建之前设置，否则 QWebEngineView 无法使用
+        # 跨平台：强制软件渲染，避免 Chromium GPU 进程
+        # - Linux: Mesa/Anaconda 驱动冲突导致 GPU 崩溃重启
+        # - Windows: ANGLE/DirectX→OpenGL 动态切换导致窗口销毁重建
+        flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+        if "--disable-gpu" not in flags:
+            os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+                flags + " --disable-gpu --disable-logging --log-level=3").strip()
+        os.environ["QT_QUICK_BACKEND"] = "software"
+        os.environ["QT_OPENGL"] = "software"
+
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
         self.app = QApplication(sys.argv)
-        self.app.installEventFilter(self)  # 安装事件过滤器
+        self.app.installEventFilter(self)
+
+        # 设置应用名称和桌面文件名，确保 Linux DE 正确关联任务栏图标
+        self.app.setApplicationName("GMStools")
+        if hasattr(self.app, 'setDesktopFileName'):
+            self.app.setDesktopFileName("GMStools")
+
+        # Linux: 确保 .desktop 文件存在，Wayland 合成器依赖它显示任务栏图标
+        if sys.platform != "win32":
+            self._ensure_desktop_file()
 
         try:
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('gmstools.app.1')
         except:
             pass
 
-        icon_path = self.resource_path('app.ico')
-        if os.path.exists(icon_path):
-            self.app.setWindowIcon(QIcon(icon_path))
+        # 按平台选择图标格式：Linux 优先 png，Windows 用 ico
+        icon_candidates = ['app.png', 'app.ico'] if sys.platform != 'win32' else ['app.ico', 'app.png']
+        for icon_name in icon_candidates:
+            icon_path = self.resource_path(icon_name)
+            if os.path.exists(icon_path):
+                icon = QIcon(icon_path)
+                if not icon.isNull():
+                    self._persist_app_icon = icon  # 保持引用防 GC
+                    self.app.setWindowIcon(icon)
+                    break
         else:
-            print(f"Warning: Icon file not found at {icon_path}")
+            # 兜底：从 app_miku.jpg / Miku.jpg 生成图标
+            for fallback in ['app_miku.jpg', 'Miku.jpg']:
+                fallback_path = self.resource_path(fallback)
+                if os.path.exists(fallback_path):
+                    pixmap = QPixmap(fallback_path)
+                    if not pixmap.isNull():
+                        icon = QIcon(pixmap)
+                        self._persist_app_icon = icon
+                        self.app.setWindowIcon(icon)
+                        break
+            else:
+                print("Warning: 未能加载任何图标文件")
 
         font = QFont("Microsoft YaHei", 14)
         self.app.setFont(font)
@@ -389,10 +482,6 @@ class AppController(QObject):  # 继承 QObject 以使用事件过滤器
         return self.app
 
     def eventFilter(self, obj, event):
-        """捕获所有对象的 Show 事件"""
-        if event.type() == QEvent.Type.Show:
-            # 打印显示窗口的信息
-            print(f"[EventFilter] Show event: object={obj}, class={obj.metaObject().className()}, parent={obj.parent()}")
         return super().eventFilter(obj, event)
 
     def create_main_window(self):
