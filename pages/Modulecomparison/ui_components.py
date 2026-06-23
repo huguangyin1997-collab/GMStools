@@ -19,7 +19,6 @@ def create_file_selection_button(text, width=140, height=36):
         QPushButton {
             padding: 8px 15px;
             font-size: 14px;
-<<<<<<< HEAD
             border: 2px solid #4A90D9;
             border-radius: 4px;
             background-color: #4A90D9;
@@ -30,18 +29,6 @@ def create_file_selection_button(text, width=140, height=36):
         }
         QPushButton:pressed {
             background-color: #2E6AA8;
-=======
-            border: 2px solid #39C5BB;
-            border-radius: 4px;
-            background-color: #39C5BB;
-            color: white;
-        }
-        QPushButton:hover {
-            background-color: #2FAFA6;
-        }
-        QPushButton:pressed {
-            background-color: #259990;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         }
     """)
     return button
@@ -52,24 +39,15 @@ def create_action_button(text):
     button.setFixedHeight(36)  # 只设置高度，宽度由布局控制
     button.setStyleSheet("""
         QPushButton {
-<<<<<<< HEAD
             background-color: #4A90D9;
-=======
-            background-color: #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             color: white;
             border: none;
             border-radius: 4px;
             font-weight: bold;
             font-size: 14px;
         }
-<<<<<<< HEAD
         QPushButton:hover { color: black; 
             background-color: #3A7BC0;
-=======
-        QPushButton:hover {
-            background-color: #2FAFA6;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         }
         QPushButton:pressed {
             background-color: #21618c;
@@ -96,11 +74,7 @@ def get_combo_box_style(is_selected=False):
     if is_selected:
         return """
             QComboBox {
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 0.7);
-=======
-                background-color: white;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 2px solid #27ae60;
                 border-radius: 4px;
                 padding: 5px;
@@ -116,26 +90,16 @@ def get_combo_box_style(is_selected=False):
                 width: 20px;
             }
             QComboBox QAbstractItemView {
-<<<<<<< HEAD
                 border: 1px solid #4A90D9;
                 selection-background-color: #4A90D9;
-=======
-                border: 1px solid #39C5BB;
-                selection-background-color: #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 font-size: 14px;
             }
         """
     else:
         return """
             QComboBox {
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 0.7);
                 border: 2px solid #4A90D9;
-=======
-                background-color: white;
-                border: 2px solid #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border-radius: 4px;
                 padding: 5px;
                 min-width: 200px;
@@ -146,21 +110,12 @@ def get_combo_box_style(is_selected=False):
             }
             QComboBox::down-arrow {
                 image: none;
-<<<<<<< HEAD
                 border-left: 1px solid #4A90D9;
                 width: 20px;
             }
             QComboBox QAbstractItemView {
                 border: 1px solid #4A90D9;
                 selection-background-color: #4A90D9;
-=======
-                border-left: 1px solid #39C5BB;
-                width: 20px;
-            }
-            QComboBox QAbstractItemView {
-                border: 1px solid #39C5BB;
-                selection-background-color: #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 font-size: 14px;
             }
         """
@@ -170,11 +125,7 @@ def get_text_edit_style(has_content=False):
     if has_content:
         return """
             QTextEdit {
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 0.7);
-=======
-                background-color: rgba(255, 255, 255, 0.6);
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 2px solid #27ae60;
                 border-radius: 4px;
                 padding: 10px;
@@ -184,13 +135,8 @@ def get_text_edit_style(has_content=False):
     else:
         return """
             QTextEdit {
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 0.7);
                 border: 2px solid #4A90D9;
-=======
-                background-color: rgba(255, 255, 255, 0.6);
-                border: 2px solid #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border-radius: 4px;
                 padding: 10px;
                 font-size: 14px;

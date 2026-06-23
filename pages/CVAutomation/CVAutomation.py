@@ -42,13 +42,8 @@ class CVAutomation(QWidget):
                 border-radius: 0px;
                 text-align: left;
             }
-<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
-=======
-            QPushButton:hover {
-                background-color: rgba(255, 255, 255, 200);
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QPushButton:pressed {
                 background-color: rgba(240, 240, 240, 200);
@@ -117,23 +112,14 @@ class CVAutomation(QWidget):
     def get_button_style(self) -> str:
         return """
             QPushButton {
-<<<<<<< HEAD
                 background-color: #4A90D9;
-=======
-                background-color: #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 1px solid #bdc3c7;
                 border-radius: 0px;
                 color: white;
                 font-size: 14px;
             }
-<<<<<<< HEAD
             QPushButton:hover { color: black;   }
             QPushButton:pressed { background-color: #3A7BC0; }
-=======
-            QPushButton:hover { color: red; }
-            QPushButton:pressed { background-color: #2FAFA6; }
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         """
 
     def get_path_style(self) -> str:
@@ -151,11 +137,7 @@ class CVAutomation(QWidget):
     def get_output_style(self) -> str:
         return """
             QTextEdit {
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 180);
-=======
-                background-color: rgba(255, 255, 255, 200);
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 1px solid rgba(0, 0, 0, 80);
                 padding: 8px;
                 color: #333;
@@ -166,11 +148,7 @@ class CVAutomation(QWidget):
 
     # ---------- 设备管理 ----------
     def on_refresh_clicked(self):
-<<<<<<< HEAD
         self.refresh_btn.setStyleSheet(self.get_button_style().replace("#4A90D9", "#3A7BC0"))
-=======
-        self.refresh_btn.setStyleSheet(self.get_button_style().replace("#39C5BB", "#2FAFA6"))
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         self.refresh_device_list()
         QTimer.singleShot(1000, lambda: self.refresh_btn.setStyleSheet(self.get_button_style()))
 

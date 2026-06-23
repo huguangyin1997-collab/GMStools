@@ -9,13 +9,8 @@ def show_styled_message(parent, title, message, icon_type="warning"):
     """Show a themed dialog matching the app's visual style."""
     accent_map = {
         "critical": ("#E91E63", "✕"),
-<<<<<<< HEAD
         "warning": ("#4A90D9", "!"),
         "info": ("#4A90D9", "i"),
-=======
-        "warning": ("#39C5BB", "!"),
-        "info": ("#39C5BB", "i"),
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     }
     accent, icon_char = accent_map.get(icon_type, accent_map["warning"])
 
@@ -31,11 +26,7 @@ def show_styled_message(parent, title, message, icon_type="warning"):
     card.setObjectName("styledCard")
     card.setStyleSheet("""
         QFrame#styledCard {
-<<<<<<< HEAD
             background-color: rgba(255, 255, 255, 0.7);
-=======
-            background-color: white;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             border: 1px solid #dcdde1;
         }
     """)
@@ -97,11 +88,7 @@ def show_styled_message(parent, title, message, icon_type="warning"):
             font-size: 13px;
             font-weight: bold;
         }}
-<<<<<<< HEAD
         QPushButton:hover {{ color: black;   }}
-=======
-        QPushButton:hover {{ color: #ecf0f1; }}
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         QPushButton:pressed {{ background-color: {accent}; opacity: 0.85; }}
     """)
     ok_btn.clicked.connect(dlg.accept)

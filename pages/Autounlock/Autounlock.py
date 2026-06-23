@@ -30,11 +30,7 @@ class Autounlock(QWidget):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setup_ui()
         self.update_device_button_text()
-<<<<<<< HEAD
         QTimer.singleShot(500, self.delayed_adb_check)
-=======
-        QTimer.singleShot(0, self.delayed_adb_check)
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 
     def delayed_adb_check(self):
         self.device_manager.check_adb_environment(self.refresh_device_list, self.show_adb_error)
@@ -78,24 +74,15 @@ class Autounlock(QWidget):
         self.file_path_edit.setPlaceholderText("未选择文件...")
         self.file_path_edit.setStyleSheet("""
             QLineEdit {
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 180);
                 border: 1px solid #4A90D9;
-=======
-                background-color: rgba(255, 255, 255, 100);
-                border: 1px solid #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 padding: 5px 12px;
                 color: #333;
                 font-size: 14px;
                 border-radius: 0px;
             }
             QLineEdit:hover {
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 180);
-=======
-                background-color: rgba(255, 255, 255, 200);
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
         """)
         file_layout.addWidget(self.file_path_edit)
@@ -173,31 +160,18 @@ class Autounlock(QWidget):
     def get_button_style(self) -> str:
         return """
             QPushButton {
-<<<<<<< HEAD
                 background-color: #4A90D9;
-=======
-                background-color: #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 1px solid #bdc3c7;
                 border-radius: 0px;
                 color: white;
                 font-size: 14px;
             }
-<<<<<<< HEAD
             QPushButton:hover { color: black;   }
             QPushButton:pressed { background-color: #2E6AA8; }
         """
 
     def _flash_button_green(self, button, original_style):
         green_style = original_style.replace("#4A90D9", "#27ae60")
-=======
-            QPushButton:hover { color: red; }
-            QPushButton:pressed { background-color: #259990; }
-        """
-
-    def _flash_button_green(self, button, original_style):
-        green_style = original_style.replace("#39C5BB", "#27ae60")
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         button.setStyleSheet(green_style)
         QTimer.singleShot(1000, lambda: button.setStyleSheet(original_style))
 
@@ -206,11 +180,7 @@ class Autounlock(QWidget):
     def on_refresh_clicked(self):
         self.selected_devices = []
         self.update_device_button_text()
-<<<<<<< HEAD
         green_style = self.refresh_btn_original_style.replace("#4A90D9", "#27ae60")
-=======
-        green_style = self.refresh_btn_original_style.replace("#39C5BB", "#27ae60")
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         self.refresh_btn.setStyleSheet(green_style)
         self.refresh_device_list()
 
@@ -250,11 +220,7 @@ class Autounlock(QWidget):
         count = len(self.selected_devices)
         if count == 0:
             text = "未选择设备"
-<<<<<<< HEAD
             border_color = "#4A90D9"
-=======
-            border_color = "#39C5BB"
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         else:
             devices_str = ", ".join(self.selected_devices)
             text = f"{devices_str} (已选{count}台)"
@@ -262,11 +228,7 @@ class Autounlock(QWidget):
 
         style = f"""
             QPushButton {{
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 180);
-=======
-                background-color: rgba(255, 255, 255, 100);
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 1px solid {border_color};
                 padding: 5px 12px;
                 color: #333;
@@ -274,13 +236,8 @@ class Autounlock(QWidget):
                 border-radius: 0px;
                 text-align: left;
             }}
-<<<<<<< HEAD
             QPushButton:hover {{ color: black; 
                 background-color: #3A7BC0;
-=======
-            QPushButton:hover {{
-                background-color: rgba(255, 255, 255, 200);
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }}
             QPushButton:pressed {{
                 background-color: rgba(240, 240, 240, 200);
@@ -317,13 +274,8 @@ class Autounlock(QWidget):
             intro_edit.setPlainText(intro_text)
             intro_edit.setStyleSheet("""
                 QTextEdit {
-<<<<<<< HEAD
                     background-color: rgba(255, 255, 255, 180);
                     border: 1px solid #4A90D9;
-=======
-                    background-color: rgba(255, 255, 255, 140);
-                    border: 1px solid #39C5BB;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                     color: #333;
                     font-size: 14px;
                     border-radius: 0px;

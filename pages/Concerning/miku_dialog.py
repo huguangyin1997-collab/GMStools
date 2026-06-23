@@ -106,11 +106,7 @@ class MikuDialog(QDialog):
             QLabel {
                 color: black;
                 font-weight: bold;
-<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 0.7);
-=======
-                background-color: rgba(255, 255, 255, 0.8);
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 padding: 15px;
                 border-radius: 8px;
                 font-size: 14px;
@@ -161,11 +157,7 @@ class MikuDialog(QDialog):
                 padding: 8px 16px;
                 border: 2px solid #bdc3c7;
                 color: white;
-<<<<<<< HEAD
                 background-color: #4A90D9 !important;
-=======
-                background-color: #39C5BB !important;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 font-size: 14px;
                 font-weight: bold;
                 border-radius: 15px;
@@ -174,22 +166,13 @@ class MikuDialog(QDialog):
                 margin: 0px;
             }
             QPushButton#okBtn:hover, QPushButton#yesBtn:hover, QPushButton#noBtn:hover, QPushButton#cancelBtn:hover {
-<<<<<<< HEAD
                 color: black;
-=======
-                color: red;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 background-color: #27ae60 !important;
                 border: 2px solid #bdc3c7;
             }
             QPushButton#okBtn:pressed, QPushButton#yesBtn:pressed, QPushButton#noBtn:pressed, QPushButton#cancelBtn:pressed {
-<<<<<<< HEAD
                 color: black;
                 background-color: #2E6AA8 !important;
-=======
-                color: red;
-                background-color: #259990 !important;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
         """
         btn.setStyleSheet(style)
