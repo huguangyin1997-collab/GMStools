@@ -67,7 +67,11 @@ class Disclaimer(QDialog):
             font-weight: bold;
             color: #2c3e50;
             padding: 10px;
+<<<<<<< HEAD
             background-color: rgba(255, 255, 255, 0.7);
+=======
+            background-color: rgba(255, 255, 255, 0.8);
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             border-radius: 8px;
         """)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -128,7 +132,11 @@ class Disclaimer(QDialog):
         self.disclaimer_text.setHtml(disclaimer_content)
         self.disclaimer_text.setStyleSheet("""
             QTextBrowser {
+<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 0.7);
+=======
+                background-color: rgba(255, 255, 255, 0.9);
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 2px solid #bdc3c7;
                 border-radius: 8px;
                 padding: 20px;
@@ -156,8 +164,13 @@ class Disclaimer(QDialog):
                 border-radius: 5px;
                 border: none;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
+=======
+            QPushButton:hover {
+                background-color: #2ecc71;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QPushButton:pressed {
                 background-color: #229954;
@@ -179,8 +192,13 @@ class Disclaimer(QDialog):
                 border-radius: 5px;
                 border: none;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
+=======
+            QPushButton:hover {
+                background-color: #C2185B;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QPushButton:pressed {
                 background-color: #AD1457;

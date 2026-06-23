@@ -29,15 +29,22 @@ class CustomComboBox(QPushButton):
         self.setFixedHeight(36)
         self.setStyleSheet("""
             CustomComboBox {
+<<<<<<< HEAD
                 background-color: #4A90D9;
                 color: white;
                 border: 2px solid #4A90D9;
+=======
+                background-color: #39C5BB;
+                color: white;
+                border: 2px solid #39C5BB;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border-radius: 5px;
                 padding: 6px 35px 6px 12px;
                 font-size: 14px;
                 text-align: left;
             }
             CustomComboBox:hover {
+<<<<<<< HEAD
                 background-color: #4A90D9;
                 color: black;
                 border: 2px solid #4A90D9;
@@ -46,24 +53,47 @@ class CustomComboBox(QPushButton):
                 background-color: #2E6AA8;
                 color: black;
                 border: 2px solid #2E6AA8;
+=======
+                background-color: #39C5BB;
+                color: red;
+                border: 2px solid #39C5BB;
+            }
+            CustomComboBox:pressed {
+                background-color: #259990;
+                color: red;
+                border: 2px solid #259990;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
         """)
         
         self.setText("选择ARM架构")
+<<<<<<< HEAD
         self.setFont(QFont("Arial", 14))
+=======
+        self.setFont(QFont("Arial", 10))
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         
         # 创建下拉菜单
         self.menu = QMenu(self)
         self.menu.setStyleSheet("""
             QMenu {
                 background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+<<<<<<< HEAD
                     stop:0 #e0eaf5, stop:0.5 #b2c9e8, stop:1 #80a8d4);
                 border: 2px solid #4A90D9;
+=======
+                    stop:0 #e0f2f1, stop:0.5 #b2dfdb, stop:1 #80cbc4);
+                border: 2px solid #4dd0e1;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border-radius: 5px;
                 padding: 5px;
             }
             QMenu::item {
+<<<<<<< HEAD
                 background-color: rgba(74, 144, 217, 0.8);
+=======
+                background-color: rgba(57, 197, 187, 0.8);
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 color: white;
                 padding: 8px 12px;
                 border-radius: 3px;
@@ -71,12 +101,21 @@ class CustomComboBox(QPushButton):
                 margin: 2px;
             }
             QMenu::item:hover {
+<<<<<<< HEAD
                 background-color: rgba(74, 144, 217, 0.9);
                 color: black;
             }
             QMenu::item:pressed {
                 background-color: rgba(46, 106, 168, 0.9);
                 color: black;
+=======
+                background-color: rgba(57, 197, 187, 0.9);
+                color: red;
+            }
+            QMenu::item:pressed {
+                background-color: rgba(37, 153, 144, 0.9);
+                color: red;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QMenu::item:selected {
                 background-color: rgba(39, 174, 96, 0.9);
@@ -102,7 +141,11 @@ class CustomComboBox(QPushButton):
         self.current_text = text
         self.is_selected = True
         
+<<<<<<< HEAD
         bold_font = QFont("Arial", 14)
+=======
+        bold_font = QFont("Arial", 10)
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         bold_font.setBold(True)
         self.setFont(bold_font)
         
@@ -122,12 +165,20 @@ class CustomComboBox(QPushButton):
             }
             CustomComboBox:hover {
                 background-color: #27ae60;
+<<<<<<< HEAD
                 color: black;
+=======
+                color: red;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 2px solid #27ae60;
             }
             CustomComboBox:pressed {
                 background-color: #27ae60;
+<<<<<<< HEAD
                 color: black;
+=======
+                color: red;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 2px solid #27ae60;
             }
         """)
@@ -141,7 +192,11 @@ class CustomComboBox(QPushButton):
         self.current_text = text
         self.is_selected = True
         
+<<<<<<< HEAD
         bold_font = QFont("Arial", 14)
+=======
+        bold_font = QFont("Arial", 10)
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         bold_font.setBold(True)
         self.setFont(bold_font)
         
@@ -160,12 +215,20 @@ class CustomComboBox(QPushButton):
             }
             CustomComboBox:hover {
                 background-color: #27ae60;
+<<<<<<< HEAD
                 color: black;
+=======
+                color: red;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 2px solid #27ae60;
             }
             CustomComboBox:pressed {
                 background-color: #27ae60;
+<<<<<<< HEAD
                 color: black;
+=======
+                color: red;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border: 2px solid #27ae60;
             }
         """)

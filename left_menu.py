@@ -53,7 +53,11 @@ class LeftMenu(QWidget):
             padding: 8px 16px;          /* 使用与CheckupReportUI按钮相同的内边距 */
             border: 2px solid #bdc3c7;  /* 使用与CheckupReportUI按钮相同的边框 */
             color: white;               /* 未选择时白色文字 */
+<<<<<<< HEAD
             background-color: #4A90D9;  /* 初音主题色 */
+=======
+            background-color: #39C5BB;  /* 初音主题色 */
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             font-size: 14px;            /* 使用与CheckupReportUI相同的字体大小 */
             font-weight: bold;          /* 使用与CheckupReportUI相同的字体粗细 */
             border-radius: 5px;         /* 使用与CheckupReportUI相同的圆角 */
@@ -62,6 +66,7 @@ class LeftMenu(QWidget):
         }
 
         QPushButton.menuItem:hover {
+<<<<<<< HEAD
             color: black;               /* 悬停时黑色文字 */
             background-color: #3A7BC0;
             border: 2px solid #bdc3c7;
@@ -70,6 +75,16 @@ class LeftMenu(QWidget):
         QPushButton.menuItem:pressed {
             color: black;               /* 按下时黑色文字 */
             background-color: #2E6AA8;
+=======
+            color: red;                 /* 悬停时字体为红色 */
+            background-color: #2FAFA6;  /* 初音主题悬停色 */
+            border: 2px solid #bdc3c7;  /* 悬停时边框保持不变 */
+        }
+
+        QPushButton.menuItem:pressed {
+            color: red;                 /* 按下时字体保持红色 */
+            background-color: #259990;  /* 初音主题按下色 */
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         }
 
         QPushButton.menuItem[active="true"] {

@@ -59,13 +59,21 @@ class Newfeatures(QWidget):
             }
             QFrame:hover {
                 background-color: rgba(57, 197, 187, 0.08);
+<<<<<<< HEAD
                 border-color: #4A90D9;
+=======
+                border-color: #39C5BB;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
         """)
         layout = QVBoxLayout(card)
 
         title = QLabel(f"📌 {title_text}")
+<<<<<<< HEAD
         title.setStyleSheet("font-size: 18px; font-weight: bold; color: #4A90D9;")
+=======
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #39C5BB;")
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         layout.addWidget(title)
 
         desc_label = QLabel(desc)

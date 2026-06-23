@@ -32,9 +32,15 @@ class DirectoryManager:
             QLineEdit {
                 padding: 4px 8px;
                 font-size: 14px;
+<<<<<<< HEAD
                 border: 2px solid #4A90D9;
                 border-radius: 4px;
                 background-color: rgba(255, 255, 255, 0.7);
+=======
+                border: 2px solid #39C5BB;
+                border-radius: 4px;
+                background-color: white;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 color: black;
             }
         """)
@@ -135,7 +141,11 @@ class DirectoryManager:
         if self.current_selection_type in ('file', 'directory'):
             border_color = "#27ae60"  # 绿色（有效路径）
         else:
+<<<<<<< HEAD
             border_color = "#4A90D9"  # 蓝色（无效或未选）
+=======
+            border_color = "#39C5BB"  # 蓝色（无效或未选）
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         
         self.directory_line.setStyleSheet(f"""
             QLineEdit {{
@@ -143,7 +153,11 @@ class DirectoryManager:
                 font-size: 14px;
                 border: 2px solid {border_color};
                 border-radius: 4px;
+<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 0.7);
+=======
+                background-color: white;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 color: black;
             }}
         """)

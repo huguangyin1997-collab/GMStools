@@ -24,7 +24,11 @@ class FileDialogManager:
                 # 设置选中后的文本样式
                 combo_box.setStyleSheet("""
                     QComboBox {
+<<<<<<< HEAD
                         background-color: rgba(255, 255, 255, 0.7);
+=======
+                        background-color: white;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                         border: 2px solid #27ae60;
                         border-radius: 4px;
                         padding: 5px;

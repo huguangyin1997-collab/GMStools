@@ -30,8 +30,13 @@ class ButtonManager:
                     background-color: #27ae60;
                     color: white;
                 }
+<<<<<<< HEAD
                 QPushButton:hover { color: black; 
                     background-color: #3A7BC0;
+=======
+                QPushButton:hover {
+                    background-color: #219653;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 }
                 QPushButton:pressed {
                     background-color: #1e8449;
@@ -42,6 +47,7 @@ class ButtonManager:
                 QPushButton {
                     padding: 8px 15px;
                     font-size: 14px;
+<<<<<<< HEAD
                     border: 2px solid #4A90D9;
                     border-radius: 4px;
                     background-color: #4A90D9;
@@ -52,5 +58,17 @@ class ButtonManager:
                 }
                 QPushButton:pressed {
                     background-color: #2E6AA8;
+=======
+                    border: 2px solid #39C5BB;
+                    border-radius: 4px;
+                    background-color: #39C5BB;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: #2FAFA6;
+                }
+                QPushButton:pressed {
+                    background-color: #259990;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 }
             """

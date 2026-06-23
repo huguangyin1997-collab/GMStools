@@ -25,7 +25,11 @@ class CustomTitleBar(QWidget):
         # 设置标题栏样式 - 将颜色改为黑色并加粗
         self.setStyleSheet("""
             CustomTitleBar {
+<<<<<<< HEAD
                 background-color: #4A90D9;
+=======
+                background-color: #39C5BB;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 border-top-left-radius: 15px;
                 border-top-right-radius: 15px;
             }
@@ -34,6 +38,10 @@ class CustomTitleBar(QWidget):
                 color: #ffffff;
                 font-size: 18px;
                 font-weight: 900;  /* 改为900，更粗 */
+<<<<<<< HEAD
+=======
+                font-family: "Microsoft YaHei", "Segoe UI";
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 padding: 0 6px;
             }
         """)

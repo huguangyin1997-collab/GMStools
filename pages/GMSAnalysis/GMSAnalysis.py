@@ -44,6 +44,7 @@ class GMSAnalysis(QWidget):
         except Exception:
             pass
 
+<<<<<<< HEAD
     def reload_webengine(self):
         """WebEngine 安装完成后，重新尝试加载内嵌浏览器"""
         self._loaded = False
@@ -55,6 +56,8 @@ class GMSAnalysis(QWidget):
                 self._placeholder.deleteLater()
                 self._placeholder = web_view
 
+=======
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     def _create_web_view(self):
         import os as _os
         html_path = self._html_path
@@ -124,7 +127,11 @@ class GMSAnalysis(QWidget):
         btn.setStyleSheet("""
             QPushButton { background-color: #3498db; color: white;
                 border: none; padding: 10px 30px; border-radius: 6px; font-size: 15px; }
+<<<<<<< HEAD
             QPushButton:hover { color: black;   background- }
+=======
+            QPushButton:hover { background-color: #2980b9; }
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             QPushButton:pressed { background-color: #1c6ea4; }""")
         btn.setEnabled(file_exists)
         btn.clicked.connect(lambda: webbrowser.open(f"file://{path}"))

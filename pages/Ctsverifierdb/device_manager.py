@@ -142,7 +142,11 @@ class DeviceManager:
         :param force_refresh: 是否强制刷新（忽略缓存）
         """
         now = time.time()
+<<<<<<< HEAD
         if force_refresh or DeviceManager._cached_devices is None or (now - DeviceManager._cached_devices_timestamp > 2):
+=======
+        if force_refresh or not DeviceManager._cached_devices or (now - DeviceManager._cached_devices_timestamp > 2):
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             try:
                 if not self.adb_path:
                     self.adb_path = self._find_adb_path()

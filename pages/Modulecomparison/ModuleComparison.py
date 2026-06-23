@@ -216,18 +216,30 @@ class Modulecomparison(QWidget):
         """设置初始按钮样式 - 两个按钮都为蓝色"""
         blue_style = """
             QPushButton {
+<<<<<<< HEAD
                 background-color: #4A90D9;
+=======
+                background-color: #39C5BB;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 color: white;
                 border: none;
                 border-radius: 4px;
                 font-weight: bold;
                 font-size: 14px;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
             }
             QPushButton:pressed {
                 background-color: #2E6AA8;
+=======
+            QPushButton:hover {
+                background-color: #2FAFA6;
+            }
+            QPushButton:pressed {
+                background-color: #259990;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
         """
         self.start_compare_btn.setStyleSheet(blue_style)
@@ -245,8 +257,13 @@ class Modulecomparison(QWidget):
                 font-weight: bold;
                 font-size: 14px;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
+=======
+            QPushButton:hover {
+                background-color: #219653;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QPushButton:pressed {
                 background-color: #1e8449;
@@ -256,18 +273,30 @@ class Modulecomparison(QWidget):
         # 清除记录按钮：蓝色
         self.clear_log_btn.setStyleSheet("""
             QPushButton {
+<<<<<<< HEAD
                 background-color: #4A90D9;
+=======
+                background-color: #39C5BB;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 color: white;
                 border: none;
                 border-radius: 4px;
                 font-weight: bold;
                 font-size: 14px;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
             }
             QPushButton:pressed {
                 background-color: #2E6AA8;
+=======
+            QPushButton:hover {
+                background-color: #2FAFA6;
+            }
+            QPushButton:pressed {
+                background-color: #259990;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
         """)
     
@@ -276,18 +305,30 @@ class Modulecomparison(QWidget):
         # 开始对比按钮：蓝色
         self.start_compare_btn.setStyleSheet("""
             QPushButton {
+<<<<<<< HEAD
                 background-color: #4A90D9;
+=======
+                background-color: #39C5BB;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 color: white;
                 border: none;
                 border-radius: 4px;
                 font-weight: bold;
                 font-size: 14px;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
             }
             QPushButton:pressed {
                 background-color: #2E6AA8;
+=======
+            QPushButton:hover {
+                background-color: #2FAFA6;
+            }
+            QPushButton:pressed {
+                background-color: #259990;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
         """)
         
@@ -301,8 +342,13 @@ class Modulecomparison(QWidget):
                 font-weight: bold;
                 font-size: 14px;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
+=======
+            QPushButton:hover {
+                background-color: #219653;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QPushButton:pressed {
                 background-color: #1e8449;

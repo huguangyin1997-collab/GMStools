@@ -110,8 +110,13 @@ def build_device_panels(container_layout, selected_devices, device_logs, device_
         text_edit.setPlaceholderText(f"{device_sn} 的日志输出...")
         text_edit.setStyleSheet("""
             QTextEdit {
+<<<<<<< HEAD
                 background-color: rgba(255, 255, 255, 180);
                 border: 1px solid #4A90D9;
+=======
+                background-color: rgba(255, 255, 255, 140);
+                border: 1px solid #39C5BB;
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 color: #333;
                 font-size: 12px;
                 border-radius: 0px;

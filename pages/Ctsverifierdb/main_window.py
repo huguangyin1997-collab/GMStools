@@ -24,7 +24,11 @@ class MainWindow(QWidget):
         self.devices = []  # 存储设备列表
         self.setup_ui()
         
+<<<<<<< HEAD
         QTimer.singleShot(500, self.delayed_adb_check)
+=======
+        QTimer.singleShot(0, self.delayed_adb_check)
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     
     def delayed_adb_check(self):
         self.device_manager.check_adb_environment(self.refresh_device_list, self.show_adb_error)
@@ -57,9 +61,14 @@ class MainWindow(QWidget):
                 border-radius: 0px;
                 text-align: left;
             }
+<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 
                 background-color: #3A7BC0;
+=======
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 200);
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QPushButton:pressed {
                 background-color: rgba(240, 240, 240, 200);
@@ -191,9 +200,14 @@ class MainWindow(QWidget):
                     border-radius: 0px;
                     text-align: left;
                 }
+<<<<<<< HEAD
                 QPushButton:hover { color: black; 
                 
                     background-color: #3A7BC0;
+=======
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 200);
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 }
                 QPushButton:pressed {
                     background-color: rgba(240, 240, 240, 200);
@@ -210,9 +224,14 @@ class MainWindow(QWidget):
                     border-radius: 0px;
                     text-align: left;
                 }
+<<<<<<< HEAD
                 QPushButton:hover { color: black; 
                 
                     background-color: #3A7BC0;
+=======
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 200);
+>>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 }
                 QPushButton:pressed {
                     background-color: rgba(240, 240, 240, 200);
