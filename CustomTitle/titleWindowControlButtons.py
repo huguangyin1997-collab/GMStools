@@ -29,14 +29,8 @@ class WindowControlButtons(QWidget):
                 text-align: center;
                 line-height: 50px;
             }
-<<<<<<< HEAD
             QPushButton:hover { color: black; 
                 background-color: #3A7BC0;
-=======
-            QPushButton:hover {
-                background-color: transparent;
-                color: #259990;
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             }
             QPushButton:pressed {
                 background-color: transparent;

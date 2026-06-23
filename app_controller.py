@@ -5,11 +5,7 @@ import subprocess as _sp
 import traceback
 from PyQt6.QtWidgets import QApplication, QMessageBox, QProgressDialog
 from PyQt6.QtGui import QFont, QIcon, QPixmap
-<<<<<<< HEAD
 from PyQt6.QtCore import QSharedMemory, QSettings, QObject, QEvent, Qt, QTimer
-=======
-from PyQt6.QtCore import QSharedMemory, QSettings, QObject, QEvent, Qt
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 from window_manager import WindowManager
 from usekey import verify_disclaimer_accepted
 
@@ -143,10 +139,7 @@ def _ensure_webengine_linux():
     """Linux 打包版：从外部 Python 环境加载 WebEngine。"""
     import importlib.util
 
-<<<<<<< HEAD
     # === 核心安全策略：优先读取已保存的配置，100% 绕过高危子进程探测 ===
-=======
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     _webengine_sp = _read_webengine_config()
     if _webengine_sp:
         if _webengine_sp not in sys.path:
@@ -154,16 +147,11 @@ def _ensure_webengine_linux():
         _setup_webengine_env(_webengine_sp)
         _extend_pyqt6_path(_webengine_sp)
         if importlib.util.find_spec('PyQt6.QtWebEngineWidgets') is not None:
-<<<<<<< HEAD
             # 记录日志或打印（确保它在这里直接成功返回，不往下走）
             print("✅ [WebEngine] 从 config.ini 成功命中路径，跳过危险的子进程环境探测")
             return True
 
     # 只有当 config.ini 不存在或找不到时，才允许走高危探测（通常只在第一次安装时触发）
-=======
-            return True
-
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     discovered = _discover_python_envs()
     for sp in discovered:
         if sp not in sys.path:
@@ -182,7 +170,6 @@ def _ensure_webengine_linux():
 def _ensure_webengine_windows():
     """Windows 打包版：检测并注册外部 WebEngine 路径。"""
     import importlib.util
-<<<<<<< HEAD
 
     # === 核心安全策略：如果 config.ini 有记录，说明是自动重启，直接用，绝不触发 where python 探测 ===
     _webengine_sp = _read_webengine_config()
@@ -191,10 +178,6 @@ def _ensure_webengine_windows():
     else:
         candidates = _discover_python_envs()
 
-=======
-    _webengine_sp = _read_webengine_config()
-    candidates = [_webengine_sp] if _webengine_sp else _discover_python_envs()
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     for sp in candidates:
         if not sp or 'site-packages' not in sp.replace('\\', '/'):
             continue
@@ -205,10 +188,7 @@ def _ensure_webengine_windows():
         qt_bin = os.path.join(sp, "PyQt6", "Qt6", "bin")
         if os.path.isdir(qt_bin) and qt_bin not in os.environ.get("PATH", ""):
             os.environ["PATH"] = qt_bin + ";" + os.environ.get("PATH", "")
-<<<<<<< HEAD
 
-=======
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     return importlib.util.find_spec('PyQt6.QtWebEngineWidgets') is not None
 
 
@@ -388,18 +368,13 @@ class AppController(QObject):  # 继承 QObject 以使用事件过滤器
             desktop_dir = os.path.join(os.path.expanduser('~'), '.local', 'share', 'applications')
             desktop_file = os.path.join(desktop_dir, 'GMStools.desktop')
 
-<<<<<<< HEAD
             # 找到或生成图标文件（.desktop Icon 必须是实际存在的文件）
-=======
-            # 找到图标文件
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             icon_path = None
             for name in ['app.png', 'app.ico']:
                 p = self.resource_path(name)
                 if os.path.exists(p):
                     icon_path = os.path.abspath(p)
                     break
-<<<<<<< HEAD
             # 如果 PNG 不存在，从 app_miku.jpg 自动生成
             if not icon_path:
                 for src in ['app_miku.jpg', 'Miku.jpg']:
@@ -414,8 +389,6 @@ class AppController(QObject):  # 继承 QObject 以使用事件过滤器
                         except Exception:
                             pass
                         break
-=======
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             if not icon_path:
                 return
 
@@ -429,19 +402,12 @@ Name=GMStools
 Comment=Android ADB Tools - GMS Testing
 Exec={exec_path}
 Path={work_dir}
-<<<<<<< HEAD
 Icon=GMStools
 Terminal=false
 Categories=Utility;Development;
 StartupNotify=true
 StartupWMClass=gmstools
 X-GNOME-WMClass=gmstools
-=======
-Icon={icon_path}
-Terminal=false
-Categories=Utility;Development;
-StartupWMClass=GMStools
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 """
             # 只在内容变化时才写入，避免不必要的时间戳更新
             old_content = None
@@ -453,7 +419,6 @@ StartupWMClass=GMStools
                 with open(desktop_file, 'w', encoding='utf-8') as f:
                     f.write(content)
                 print(f"✓ 已创建/更新桌面文件: {desktop_file}")
-<<<<<<< HEAD
                 # 仅首次：安装多尺寸图标到 XDG 路径
                 try:
                     from PIL import Image
@@ -484,19 +449,6 @@ StartupWMClass=GMStools
                         _sp.run(cmd, capture_output=True, timeout=2)
                     except Exception:
                         pass
-=======
-
-            # 通知桌面环境刷新图标缓存（减少 Wayland 合成器延迟）
-            import subprocess as _sp
-            for cmd in (
-                ['update-desktop-database', desktop_dir],
-                ['gtk-update-icon-cache', os.path.join(os.path.expanduser('~'), '.local', 'share', 'icons'), '-f'],
-            ):
-                try:
-                    _sp.run(cmd, capture_output=True, timeout=5)
-                except Exception:
-                    pass
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         except Exception as e:
             print(f"⚠ 创建桌面文件失败: {e}")
 
@@ -511,7 +463,6 @@ StartupWMClass=GMStools
         os.environ["QT_QUICK_BACKEND"] = "software"
         os.environ["QT_OPENGL"] = "software"
 
-<<<<<<< HEAD
         # Windows: 必须在 QApplication 之前设置 AppUserModelID
         if sys.platform == 'win32':
             try:
@@ -519,21 +470,14 @@ StartupWMClass=GMStools
             except Exception:
                 pass
 
-=======
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
         self.app = QApplication(sys.argv)
         self.app.installEventFilter(self)
 
-<<<<<<< HEAD
-=======
-        # 设置应用名称和桌面文件名，确保 Linux DE 正确关联任务栏图标
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         self.app.setApplicationName("GMStools")
         if hasattr(self.app, 'setDesktopFileName'):
             self.app.setDesktopFileName("GMStools")
 
-<<<<<<< HEAD
         if sys.platform != "win32":
             self._ensure_desktop_file()
 
@@ -551,29 +495,6 @@ StartupWMClass=GMStools
                 self._persist_app_icon = icon
                 self.app.setWindowIcon(icon)
         if not self._persist_app_icon:
-=======
-        # Linux: 确保 .desktop 文件存在，Wayland 合成器依赖它显示任务栏图标
-        if sys.platform != "win32":
-            self._ensure_desktop_file()
-
-        try:
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('gmstools.app.1')
-        except:
-            pass
-
-        # 按平台选择图标格式：Linux 优先 png，Windows 用 ico
-        icon_candidates = ['app.png', 'app.ico'] if sys.platform != 'win32' else ['app.ico', 'app.png']
-        for icon_name in icon_candidates:
-            icon_path = self.resource_path(icon_name)
-            if os.path.exists(icon_path):
-                icon = QIcon(icon_path)
-                if not icon.isNull():
-                    self._persist_app_icon = icon  # 保持引用防 GC
-                    self.app.setWindowIcon(icon)
-                    break
-        else:
-            # 兜底：从 app_miku.jpg / Miku.jpg 生成图标
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             for fallback in ['app_miku.jpg', 'Miku.jpg']:
                 fallback_path = self.resource_path(fallback)
                 if os.path.exists(fallback_path):
@@ -583,19 +504,12 @@ StartupWMClass=GMStools
                         self._persist_app_icon = icon
                         self.app.setWindowIcon(icon)
                         break
-<<<<<<< HEAD
 
         font = QFont()
         font.setPointSize(14)
         if sys.platform == 'win32':
             font.setFamily("Microsoft YaHei")
         # Linux 不指定 family，用系统默认字体（避免 fontconfig 回退搜索延迟）
-=======
-            else:
-                print("Warning: 未能加载任何图标文件")
-
-        font = QFont("Microsoft YaHei", 14)
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         self.app.setFont(font)
 
         # 单实例检查（自动清理异常退出残留的共享内存）
@@ -636,7 +550,6 @@ StartupWMClass=GMStools
 
     def run_application(self):
         if self.window:
-<<<<<<< HEAD
             # Windows: 窗口 show 之前从 EXE 内嵌资源预置图标
             if sys.platform == 'win32' and getattr(sys, 'frozen', False):
                 try:
@@ -655,23 +568,15 @@ StartupWMClass=GMStools
             # showEvent 中已通过 restoreWindowIcon() 再次加固
             if sys.platform == 'win32':
                 self.window.restoreWindowIcon()
-=======
-            self.window.show()
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             sys.exit(self.app.exec())
 
 def main():
     # 双击启动时工作目录可能是 $HOME，切换到程序所在目录
-<<<<<<< HEAD
-=======
-    # 确保 platform-tools/、unlock/、config.ini 等相对路径正确
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     if getattr(sys, 'frozen', False):
         os.chdir(os.path.dirname(sys.executable))
     else:
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-<<<<<<< HEAD
     # Windows 打包：所有 Qt 代码之前，Win32 层预注册图标
     # Chromium 预热 + FramelessWindow 会抢走第一帧，必须提前锁死
     if sys.platform == 'win32' and getattr(sys, 'frozen', False):
@@ -684,15 +589,12 @@ def main():
         except Exception:
             pass
 
-=======
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     has_webengine = _ensure_webengine()
 
     try:
         controller = AppController()
         controller.initialize_application()
 
-<<<<<<< HEAD
         if not has_webengine:
             # 先创建 + 显示主窗口，占住 taskbar 图标位
             controller.create_main_window()
@@ -715,13 +617,6 @@ def main():
             # WebEngine 已安装 → 直接创建窗口，页面自动使用内嵌浏览器
             controller.create_main_window()
 
-=======
-        # 未安装 PyQt6-WebEngine 时弹窗引导安装
-        if not has_webengine:
-            _offer_webengine_install()
-
-        controller.create_main_window()
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
         controller.run_application()
     except Exception as e:
         with open("crash.log", "w", encoding="utf-8") as f:
@@ -800,7 +695,6 @@ def _get_installed_pyqt6_version():
     return ""
 
 
-<<<<<<< HEAD
 def _run_webengine_installer():
     """独立安装进程：只有 pip，不创建 QApplication。
     安装完成 → main() 用 os.execv 原地替换为干净的新进程。"""
@@ -886,8 +780,6 @@ def _find_system_python():
     return None
 
 
-=======
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 def _offer_webengine_install():
     """弹窗引导安装 PyQt6-WebEngine 到系统 Python 环境。
     跨平台支持 Windows / Linux，自动版本对齐，优先使用国内镜像。"""
@@ -909,7 +801,6 @@ def _offer_webengine_install():
         QMessageBox.StandardButton.Yes,
     )
     if reply != QMessageBox.StandardButton.Yes:
-<<<<<<< HEAD
         QMessageBox.information(
             None, "GMStools",
             "将使用系统浏览器打开网页内容。\n\n"
@@ -918,28 +809,16 @@ def _offer_webengine_install():
             "    pip install PyQt6-WebEngine PyQt6-WebEngine-Qt6"
         )
         return False
-=======
-        return
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 
     # 检测已装的 PyQt6 版本，确保 WebEngine 版本匹配
     version = _get_installed_pyqt6_version()
     if not version:
         version = "6.11.0"  # fallback 版本
 
-<<<<<<< HEAD
     # 只需安装 WebEngine 两个包，其余依赖已在打包中
     packages = [
         f"PyQt6-WebEngine>={version}",
         f"PyQt6-WebEngine-Qt6>={version}",
-=======
-    # 四个包必须版本严格对齐
-    packages = [
-        f"PyQt6=={version}",
-        f"PyQt6-Qt6=={version}",
-        f"PyQt6-WebEngine=={version}",
-        f"PyQt6-WebEngine-Qt6=={version}",
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     ]
 
     # 收集可用的 Python 解释器
@@ -987,23 +866,12 @@ def _offer_webengine_install():
 
     base_flags = [
         "--disable-pip-version-check", "--no-warn-script-location",
-<<<<<<< HEAD
         "--default-timeout=15", "--retries=1",
     ]
 
     mirrors = [
         ("https://pypi.tuna.tsinghua.edu.cn/simple", "pypi.tuna.tsinghua.edu.cn"),
         (None, None),
-=======
-        "--default-timeout=120",
-        "--force-reinstall",  # 覆盖 conda 旧版 Qt6 C++ 库，确保符号一致
-    ]
-
-    # 尝试顺序：清华源 → 官方 PyPI
-    mirrors = [
-        ("https://pypi.tuna.tsinghua.edu.cn/simple", "pypi.tuna.tsinghua.edu.cn"),
-        (None, None),  # 官方 PyPI
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
     ]
 
     # 显示安装进度对话框
@@ -1061,11 +929,7 @@ def _offer_webengine_install():
     progress.close()
 
     if progress.wasCanceled():
-<<<<<<< HEAD
         return False
-=======
-        return
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 
     if not installed:
         # 给出清晰的命令行供用户手动执行
@@ -1079,11 +943,7 @@ def _offer_webengine_install():
             "--trusted-host pypi.tuna.tsinghua.edu.cn "
             f"{pkgs_str}"
         )
-<<<<<<< HEAD
         return False
-=======
-        return
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 
     # 记录安装路径到配置文件，下次启动直接加载
     for py in interpreters:
@@ -1101,7 +961,6 @@ def _offer_webengine_install():
         except Exception:
             continue
 
-<<<<<<< HEAD
     # 安装完成，刷新 import 缓存
     try:
         import importlib as _importlib
@@ -1114,13 +973,6 @@ def _offer_webengine_install():
         "内嵌浏览器组件安装成功！\n\n程序将自动加载内嵌浏览页面。"
     )
     return True
-=======
-    QMessageBox.information(
-        None, "安装完成",
-        "内嵌浏览器组件安装成功！\n\n"
-        "请重启 GMStools 以启用内嵌网页浏览功能。"
-    )
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 
 if __name__ == "__main__":
     main()

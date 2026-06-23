@@ -1,6 +1,5 @@
 # Miku Hatsune theme color constants and QSS helpers for GMStools
 
-<<<<<<< HEAD
 # === Premium Blue (Primary Accent) ===
 PREMIUM_BLUE = "#4A90D9"
 PREMIUM_BLUE_HOVER = "#3A7BC0"
@@ -8,12 +7,6 @@ PREMIUM_BLUE_PRESSED = "#2E6AA8"
 MIKU_TEAL = PREMIUM_BLUE  # backwards compat
 MIKU_TEAL_HOVER = PREMIUM_BLUE_HOVER
 MIKU_TEAL_PRESSED = PREMIUM_BLUE_PRESSED
-=======
-# === Signature Miku Teal (Primary Accent) ===
-MIKU_TEAL = "#39C5BB"
-MIKU_TEAL_HOVER = "#2FAFA6"
-MIKU_TEAL_PRESSED = "#259990"
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 
 # === Green (Active / Selected / Success) ===
 GREEN = "#27AE60"
@@ -34,17 +27,11 @@ TEXT_LIGHT = "#7F8C8D"
 
 # === Backgrounds ===
 CARD_BG = "rgba(255, 255, 255, 0.7)"
-<<<<<<< HEAD
 CARD_BG_LIGHTER = "rgba(255, 255, 255, 0.7)"
 BLUE_BG_ALPHA = "rgba(74, 144, 217, 0.15)"
 BLUE_BG_ALPHA_STRONG = "rgba(74, 144, 217, 0.25)"
 TEAL_BG_ALPHA = BLUE_BG_ALPHA  # backwards compat
 TEAL_BG_ALPHA_STRONG = BLUE_BG_ALPHA_STRONG
-=======
-CARD_BG_LIGHTER = "rgba(255, 255, 255, 0.4)"
-TEAL_BG_ALPHA = "rgba(57, 197, 187, 0.15)"
-TEAL_BG_ALPHA_STRONG = "rgba(57, 197, 187, 0.25)"
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
 
 
 def get_button_style(selected=False):
@@ -58,12 +45,8 @@ def get_button_style(selected=False):
                 font-size: 14px;
                 font-weight: bold;
             }}
-<<<<<<< HEAD
             QPushButton:hover {{ color: black; 
                 
-=======
-            QPushButton:hover {{
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
                 background-color: {GREEN_HOVER};
                 border-color: {GREEN_HOVER};
             }}
@@ -80,12 +63,8 @@ def get_button_style(selected=False):
             font-size: 14px;
             font-weight: bold;
         }}
-<<<<<<< HEAD
         QPushButton:hover {{ color: black; 
             
-=======
-        QPushButton:hover {{
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             background-color: {MIKU_TEAL_HOVER};
             border-color: {MIKU_TEAL_HOVER};
         }}
@@ -106,12 +85,8 @@ def get_danger_button_style():
             font-size: 14px;
             font-weight: bold;
         }}
-<<<<<<< HEAD
         QPushButton:hover {{ color: black; 
             
-=======
-        QPushButton:hover {{
->>>>>>> 8b50fe45e3323742a9544b3fc2ba97e31b3e5c30
             background-color: {MIKU_PINK_HOVER};
             border-color: {MIKU_PINK_HOVER};
         }}
