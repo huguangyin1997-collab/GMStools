@@ -19,7 +19,8 @@ unlock/
 GMStools.exe
 
 #新功能文件
-build_all_platforms.py
+build_all_platforms-onedir.py
+build_all_platforms-onefile.py
 git.txt
 .gitignore
 
