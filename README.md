@@ -54,7 +54,8 @@ pip install -r requirements.txt
 | openpyxl | 3.1.5 | Excel 读写（报告导出 / CTS Verifier DB） |
 | beautifulsoup4 | 4.14.3 | HTML 解析（模块对比、SMR 对比） |
 | Pillow | 12.1.1 | 图片处理（图标、背景图） |
-| cryptography | ≥42.0.0 | RSA-SHA256 签名（展讯设备解锁） |
+| cryptography | ≥42.0.0 | RSA-SHA256 签名 |
+| pyinstaller | >=6.21.0 | 打包库文件 |
 
 ### 3. 确保外置工具就位
 
