@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QTimer, QEvent
 from ..Ctsverifierdb.device_manager import DeviceManager
-from .utils import _get_fastboot_path, _get_unlock_dir, _run_command
+from .utils import _get_fastboot_path, _get_unlock_dir, _run_command, get_app_dir
 from .runner import UnlockSignals, UnlockRunner
 from .dialogs import show_styled_message
 from .device_panel import DeviceListPopup, build_device_panels, get_fastboot_devices
@@ -361,7 +361,7 @@ class Autounlock(QWidget):
         if device_sn in self._device_log_files:
             return self._device_log_files[device_sn], self._device_log_paths[device_sn]
 
-        log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'logs')
+        log_dir = os.path.join(get_app_dir(), 'logs')
         os.makedirs(log_dir, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_sn = device_sn.replace(':', '_').replace('/', '_')
