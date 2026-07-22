@@ -260,7 +260,7 @@ class PackageComparator:
         # 比较权限列表
         perms_diff = self._compare_permissions_for_change(mr_package, smr_package)
         if perms_diff:
-            differences.append(("请求的权限", perms_diff[0], perms_diff[1]))
+            differences.append(("请求的权限", perms_diff, None))
         
         if differences:
             return PackageChange(
@@ -278,23 +278,30 @@ class PackageComparator:
                 new_package=smr_package
             )
     
-    def _compare_permissions_for_change(self, mr_package: Dict, smr_package: Dict) -> Optional[Tuple[str, str]]:
-        """比较权限列表，返回差异摘要"""
+    def _compare_permissions_for_change(self, mr_package: Dict, smr_package: Dict) -> Optional[Dict]:
+        """比较权限列表，返回具体变化的权限详情"""
         mr_perms = mr_package.get("requested_permissions", [])
         smr_perms = smr_package.get("requested_permissions", [])
-        
-        if mr_perms == smr_perms:
-            return None
-        
+
         # 获取权限名称列表
         mr_perm_names = [p.get("name", "未知权限") for p in mr_perms]
         smr_perm_names = [p.get("name", "未知权限") for p in smr_perms]
-        
-        mr_count = len(mr_perms)
-        smr_count = len(smr_perms)
-        
-        return (f"{mr_count}个权限: {', '.join(mr_perm_names[:3])}{'...' if mr_count > 3 else ''}",
-                f"{smr_count}个权限: {', '.join(smr_perm_names[:3])}{'...' if smr_count > 3 else ''}")
+
+        mr_set = set(mr_perm_names)
+        smr_set = set(smr_perm_names)
+
+        if mr_set == smr_set:
+            return None
+
+        removed = sorted(mr_set - smr_set)  # MR有但SMR没有的
+        added = sorted(smr_set - mr_set)    # SMR有但MR没有的
+
+        return {
+            "mr_perms": mr_perm_names,
+            "smr_perms": smr_perm_names,
+            "removed": removed,
+            "added": added,
+        }
     
     def _generate_text_report(self, mr_packages: List[Dict], smr_packages: List[Dict],
                             mr_package_dict: Dict, smr_package_dict: Dict,
@@ -370,7 +377,7 @@ class PackageComparator:
         
         # 比较字段
         fields_to_check = [
-            ("版本名称", "version_name"),
+            ("apk版本号更新", "version_name"),
             ("安装路径", "dir"),
             ("系统权限标志", "system_priv"),
             ("最小SDK", "min_sdk"),
@@ -482,7 +489,7 @@ class PackageComparator:
         
         # 提取所有关键字段
         fields = [
-            ("版本名称", "version_name"),
+            ("apk版本号更新", "version_name"),
             ("安装路径", "dir"),
             ("系统权限标志", "system_priv"),
             ("最小SDK", "min_sdk"),
@@ -537,6 +544,7 @@ class PackageComparator:
             --color-border: #dee2e6;
             --color-text: #333;
             --color-text-light: #666;
+            --color-diff-red: #ff4444;
         }}
         
         * {{
@@ -831,26 +839,47 @@ class PackageComparator:
         }}
         
         .change-item {{
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: rgba(255, 68, 68, 0.05);
+            border-radius: 4px;
+            border-left: 3px solid var(--color-diff-red);
             color: var(--color-text-light);
         }}
         
         .change-old {{
-            color: var(--color-removed);
+            color: var(--color-diff-red);
             text-decoration: line-through;
             margin-right: 5px;
+            font-weight: bold;
         }}
         
         .change-new {{
-            color: var(--color-added);
+            color: var(--color-diff-red);
             margin-left: 5px;
+            font-weight: bold;
         }}
         
         .arrow {{
-            color: var(--color-text-light);
+            color: var(--color-diff-red);
             margin: 0 5px;
+            font-weight: bold;
         }}
-        
+
+        /* 差异字段在MR/SMR列中的高亮样式 */
+        .diff-field-item {{
+            padding: 3px 5px;
+            margin-bottom: 2px;
+            border-radius: 3px;
+            background-color: rgba(255, 68, 68, 0.08);
+            border-left: 3px solid var(--color-diff-red);
+        }}
+
+        .diff-field {{
+            color: var(--color-diff-red);
+            font-weight: bold;
+        }}
+
         /* 控制按钮 */
         .controls {{
             display: flex;
@@ -923,7 +952,7 @@ class PackageComparator:
     <div class="container">
         <div class="header">
             <h1>🔍 Package JSON 对比报告</h1>
-            <div class="subtitle">MR vs SMR 包信息详细对比</div>
+            <div class="subtitle">MR vs SMR 包信息详细对比 - 差异项显示为红色</div>
             <div class="timestamp">生成时间: {now}</div>
         </div>
         
@@ -1012,8 +1041,8 @@ class PackageComparator:
         </div>
         
         <div class="comparison-section">
-            <h2 class="section-title">🔍 详细对比</h2>
-            
+            <h2 class="section-title">🔍 详细对比 - <span style="color: var(--color-diff-red);">差异项已标红</span></h2>
+
             <div class="legend">
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: var(--color-same);"></div>
@@ -1024,12 +1053,8 @@ class PackageComparator:
                     <span>修改 - 内容发生变化</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: var(--color-added);"></div>
-                    <span>新增 - SMR文件中独有的包</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: var(--color-removed);"></div>
-                    <span>删除 - MR文件中独有的包</span>
+                    <div class="legend-color" style="background-color: var(--color-diff-red);"></div>
+                    <span><strong>差异项 - 显示为红色</strong></span>
                 </div>
             </div>
             
@@ -1069,19 +1094,26 @@ class PackageComparator:
             # MR版本信息
             mr_info = ""
             if change.old_package:
-                # 格式化包信息
-                formatted_mr = self._format_package_for_html(change.old_package)
+                # 构建差异信息：字段名 → 具体差异数据
+                mr_diff_info = {}
+                if change.differences:
+                    for field, old_val, new_val in change.differences:
+                        mr_diff_info[field] = old_val
+                formatted_mr = self._format_package_for_html(change.old_package, diff_info=mr_diff_info, is_mr_side=True)
                 mr_info = f'''
                     <div class="package-info">
                         <div class="package-details">{formatted_mr}</div>
                     </div>
                 '''
-            
+
             # SMR版本信息
             smr_info = ""
             if change.new_package:
-                # 格式化包信息
-                formatted_smr = self._format_package_for_html(change.new_package)
+                smr_diff_info = {}
+                if change.differences:
+                    for field, old_val, new_val in change.differences:
+                        smr_diff_info[field] = new_val if field != "请求的权限" else old_val
+                formatted_smr = self._format_package_for_html(change.new_package, diff_info=smr_diff_info, is_mr_side=False)
                 smr_info = f'''
                     <div class="package-info">
                         <div class="package-details">{formatted_smr}</div>
@@ -1093,14 +1125,22 @@ class PackageComparator:
             if change.differences:
                 change_details = '<div class="changes-list">'
                 for field, old_val, new_val in change.differences:
-                    # 特殊处理权限字段
-                    if field == "请求的权限" and isinstance(old_val, tuple) and isinstance(new_val, tuple):
+                    # 特殊处理权限字段 - 显示具体新增/移除的权限名
+                    if field == "请求的权限" and isinstance(old_val, dict):
+                        removed_perms = old_val.get("removed", [])
+                        added_perms = old_val.get("added", [])
+                        perm_parts = []
+                        if removed_perms:
+                            removed_html = ", ".join(f'<span class="diff-field">{p}</span>' for p in removed_perms)
+                            perm_parts.append(f'<span>MR移除: {removed_html}</span>')
+                        if added_perms:
+                            added_html = ", ".join(f'<span class="diff-field">{p}</span>' for p in added_perms)
+                            perm_parts.append(f'<span>SMR新增: {added_html}</span>')
+                        perm_detail = "<br>".join(perm_parts)
                         change_details += f'''
                             <div class="change-item">
                                 <span class="change-field">{field}:</span><br>
-                                <span class="change-old">{old_val[0]}</span>
-                                <span class="arrow">→</span>
-                                <span class="change-new">{new_val[0]}</span>
+                                {perm_detail}
                             </div>
                         '''
                     else:
@@ -1139,7 +1179,7 @@ class PackageComparator:
         <div class="footer">
             <p>生成时间: ''' + now + ''' | 对比算法: PackageComparator | 版本: 2.0</p>
             <p style="margin-top: 5px; font-size: 0.8rem; color: #888;">
-                说明：此报告比较两个JSON文件中的package信息，识别相同、修改、新增和删除的包。
+                说明：此报告比较两个JSON文件中的package信息，<strong style="color: var(--color-diff-red);">差异项已用红色突出显示</strong>。
             </p>
         </div>
     </div>
@@ -1202,16 +1242,19 @@ class PackageComparator:
         except Exception as e:
             return f"生成HTML报告失败: {e}"
     
-    def _format_package_for_html(self, package: Dict) -> str:
-        """格式化包信息用于HTML显示"""
+    def _format_package_for_html(self, package: Dict, diff_info: dict = None, is_mr_side: bool = True) -> str:
+        """格式化包信息用于HTML显示，支持差异字段标红，权限逐个标红"""
         if not package:
             return ""
-        
+
+        if diff_info is None:
+            diff_info = {}
+
         lines = []
-        
+
         # 关键字段
         fields = [
-            ("版本名称", "version_name"),
+            ("apk版本号更新", "version_name"),
             ("安装路径", "dir"),
             ("系统权限标志", "system_priv"),
             ("最小SDK", "min_sdk"),
@@ -1221,23 +1264,64 @@ class PackageComparator:
             ("是否为活动管理员", "is_active_admin"),
             ("是否为默认无障碍服务", "is_default_accessibility_service")
         ]
-        
+
         for display_name, field_key in fields:
             value = package.get(field_key)
             if value is not None:
                 formatted_value = self._format_value_for_html(value)
-                lines.append(f"<b>{display_name}:</b> {formatted_value}")
-        
-        # 权限信息
+
+                if display_name in diff_info:
+                    lines.append(f"<div class='diff-field-item'><b>{display_name}:</b> <span class='diff-field'>{formatted_value}</span></div>")
+                else:
+                    lines.append(f"<b>{display_name}:</b> {formatted_value}")
+
+        # 权限信息 - 逐个权限标红
         perms = package.get("requested_permissions", [])
         if perms:
             perm_names = [p.get("name", "未知权限") for p in perms]
-            lines.append(f"<b>请求权限:</b> {len(perms)}个")
-            if len(perm_names) <= 5:
-                lines.append(f"  {', '.join(perm_names)}")
+            perm_count = len(perm_names)
+
+            if "请求的权限" in diff_info:
+                # 权限有差异：逐个渲染，变化的标红
+                perm_diff = diff_info["请求的权限"]
+                if isinstance(perm_diff, dict):
+                    removed_set = set(perm_diff.get("removed", []))
+                    added_set = set(perm_diff.get("added", []))
+
+                    # 逐权限标记：MR侧标红removed，SMR侧标红added
+                    highlighted = []
+                    for pname in perm_names:
+                        if is_mr_side:
+                            is_changed = pname in removed_set
+                        else:
+                            is_changed = pname in added_set
+
+                        if is_changed:
+                            highlighted.append(f"<span class='diff-field'>{pname}</span>")
+                        else:
+                            highlighted.append(pname)
+
+                    # 显示全部权限（只有变化的权限标红）
+                    perm_str = ", ".join(highlighted)
+                    perm_display = f"{perm_count}个 ({perm_str})"
+                    lines.append(f"<div class='diff-field-item'><b>请求权限:</b> {perm_display}</div>")
+                else:
+                    # 兼容旧格式：只标红行，不把全部文字变红
+                    perm_display = f"{perm_count}个"
+                    if perm_count <= 5:
+                        perm_display += f" ({', '.join(perm_names)})"
+                    else:
+                        perm_display += f" ({', '.join(perm_names[:5])}...)"
+                    lines.append(f"<div class='diff-field-item'><b>请求权限:</b> {perm_display}</div>")
             else:
-                lines.append(f"  {', '.join(perm_names[:5])}...")
-        
+                # 权限无差异：正常显示（截断过长列表）
+                perm_display = f"{perm_count}个"
+                if perm_count <= 5:
+                    perm_display += f" ({', '.join(perm_names)})"
+                else:
+                    perm_display += f" ({', '.join(perm_names[:5])}...)"
+                lines.append(f"<b>请求权限:</b> {perm_display}")
+
         return "<br>".join(lines)
     
     def _format_value_for_html(self, value: Any) -> str:

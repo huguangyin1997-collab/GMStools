@@ -192,29 +192,27 @@ class Autounlock(QWidget):
         self.refresh_btn.setStyleSheet(self.refresh_btn_original_style)
 
     def _reboot_single_device(self, sn, fastboot, adb_path):
-        """Reboot a single device, auto-detecting fastboot vs ADB mode."""
-        in_fastboot = False
-        rc, out, err = _run_command([fastboot, 'devices'], timeout=10)
-        for line in out.strip().split('\n'):
-            if line.strip() and sn in line:
-                in_fastboot = True
-                break
+        """Reboot a single device. Try fastboot reboot first (device likely in
+        fastboot/fastbootd mode after flashing), fall back to adb reboot."""
+        # Priority: fastboot reboot (device is usually in fastboot after our ops)
+        self.add_status_message(f"{sn}: 尝试 fastboot reboot...")
+        self._log_to_device(sn, "执行 fastboot reboot")
+        rc, out, err = _run_command([fastboot, '-s', sn, 'reboot'], timeout=30)
+        if rc == 0 or 'okay' in (out + err).lower():
+            self.add_status_message(f"{sn}: fastboot 重启命令已发送")
+            self._log_to_device(sn, "fastboot 重启命令已发送")
+            return
 
-        if in_fastboot:
-            self.add_status_message(f"{sn}: 在 fastboot 模式，执行 fastboot reboot")
-            self._log_to_device(sn, "执行 fastboot reboot")
-            rc, out, err = _run_command([fastboot, '-s', sn, 'reboot'], timeout=30)
-        else:
-            self.add_status_message(f"{sn}: 在 ADB 模式，执行 adb reboot")
-            self._log_to_device(sn, "执行 adb reboot")
-            rc, out, err = _run_command([adb_path, '-s', sn, 'reboot'], timeout=30)
-
+        # fastboot failed, try adb reboot
+        self.add_status_message(f"{sn}: fastboot 未响应，尝试 adb reboot...")
+        self._log_to_device(sn, "fastboot 未响应，尝试 adb reboot")
+        rc, out, err = _run_command([adb_path, '-s', sn, 'reboot'], timeout=30)
         if rc != 0 and err:
             self.add_status_message(f"{sn}: 重启失败 - {err.strip()}")
             self._log_to_device(sn, f"重启失败: {err.strip()}")
         else:
-            self.add_status_message(f"{sn}: 重启命令已发送")
-            self._log_to_device(sn, "重启命令已发送")
+            self.add_status_message(f"{sn}: adb 重启命令已发送")
+            self._log_to_device(sn, "adb 重启命令已发送")
 
     def update_device_button_text(self):
         count = len(self.selected_devices)

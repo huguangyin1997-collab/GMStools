@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import traceback
 
 
 def get_app_dir():
@@ -57,37 +58,69 @@ def run_command(cmd, timeout=30):
 def sign_identifier_token(token, pem_path, sign_bin_path):
     """Sign identifier token with RSA-SHA256, replacing the shell script.
     Cross-platform: works on Linux, macOS, and Windows without bash/openssl.
+
+    Falls back to signidentifier_unlockbootloader.sh if the cryptography library
+    or its dependencies (e.g. email module) are unavailable in frozen builds.
     """
+    # --- attempt 1: Python / cryptography ---
     try:
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.asymmetric import padding
         from cryptography.hazmat.primitives.serialization import load_pem_private_key
-    except ImportError:
-        raise ImportError(
-            "缺少 cryptography 库，请运行: pip install cryptography"
+
+        try:
+            token_bytes = bytes.fromhex(token)
+        except ValueError:
+            raise ValueError(f"Token 不是有效的十六进制: {token}")
+
+        if len(token_bytes) > 64:
+            raise ValueError(f"Token 过长: {len(token_bytes)} bytes (最大 64)")
+
+        padded = token_bytes.ljust(64, b'\x00')
+
+        with open(pem_path, 'rb') as f:
+            private_key = load_pem_private_key(f.read(), password=None)
+
+        signature = private_key.sign(
+            padded,
+            padding.PKCS1v15(),
+            hashes.SHA256()
         )
 
-    try:
-        token_bytes = bytes.fromhex(token)
-    except ValueError:
-        raise ValueError(f"Token 不是有效的十六进制: {token}")
+        with open(sign_bin_path, 'wb') as f:
+            f.write(signature)
+        return  # success — done
 
-    if len(token_bytes) > 64:
-        raise ValueError(f"Token 过长: {len(token_bytes)} bytes (最大 64)")
+    except (ImportError, ModuleNotFoundError):
+        # cryptography or a dependency (e.g. email in frozen builds) is missing
+        pass
+    except Exception:
+        # Other errors from the Python path — still try the shell fallback
+        traceback.print_exc()
 
-    padded = token_bytes.ljust(64, b'\x00')
+    # --- attempt 2: shell script fallback ---
+    unlock_dir = os.path.dirname(pem_path) or get_unlock_dir()
+    script = os.path.join(unlock_dir, 'signidentifier_unlockbootloader.sh')
+    if not os.path.isfile(script):
+        raise RuntimeError(
+            "签名 token 失败: cryptography 库不可用，且未找到 "
+            f"signidentifier_unlockbootloader.sh (已搜索: {script})"
+        )
 
-    with open(pem_path, 'rb') as f:
-        private_key = load_pem_private_key(f.read(), password=None)
-
-    signature = private_key.sign(
-        padded,
-        padding.PKCS1v15(),
-        hashes.SHA256()
+    result = subprocess.run(
+        ['bash', script, token, pem_path, sign_bin_path],
+        capture_output=True, text=True, timeout=30,
+        cwd=unlock_dir
     )
-
-    with open(sign_bin_path, 'wb') as f:
-        f.write(signature)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Shell 签名脚本失败 (exit {result.returncode}):\n"
+            f"stdout: {result.stdout}\nstderr: {result.stderr}"
+        )
+    if not os.path.isfile(sign_bin_path) or os.path.getsize(sign_bin_path) == 0:
+        raise RuntimeError(
+            f"Shell 签名脚本未生成有效签名文件: {sign_bin_path}"
+        )
 
 
 def run_command_stream(cmd, timeout=60, log_callback=None):
