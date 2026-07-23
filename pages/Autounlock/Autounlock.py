@@ -387,14 +387,27 @@ class Autounlock(QWidget):
         self._close_device_log_files()
         super().closeEvent(event)
 
+    def _is_device_busy(self, device_sn):
+        """Check if the device already has an active operation in progress."""
+        for w in self._active_workers:
+            if w.device_sn == device_sn:
+                return True
+        return False
+
     def _start_unlock_thread(self, device_sn, unlock_method, description):
+        # Prevent starting a new operation on a device that's already busy
+        if self._is_device_busy(device_sn):
+            self._log_to_device(device_sn, f"[警告] 设备 {device_sn} 已有操作正在执行，跳过本次 {description}")
+            self.add_status_message(f"{device_sn}: 已有操作正在执行，跳过 {description}")
+            return False
+
         signals = UnlockSignals()
 
         pem_path = self.file_path_edit.text().strip() or None
         adb_path = self.device_manager.get_detected_adb_path()
         if not adb_path:
             show_styled_message(self, "ADB 错误", "未检测到 ADB 路径", "critical")
-            return
+            return False
 
         log_file, log_path = self._ensure_device_log_file(device_sn)
         runner = UnlockRunner(signals, device_sn, adb_path, pem_path, log_file, log_path)
@@ -411,6 +424,7 @@ class Autounlock(QWidget):
         thread.start()
 
         self._log_to_device(device_sn, f"开始 {description}: {device_sn}")
+        return True
 
     def _cleanup_worker(self, device_sn, success, message, runner, signals):
         self._on_unlock_finished(device_sn, success, message)
@@ -426,8 +440,14 @@ class Autounlock(QWidget):
         if not self._check_devices_selected():
             return
         self.add_status_message("开始 MTK 解锁...")
+        started, skipped = 0, 0
         for sn in self.selected_devices:
-            self._start_unlock_thread(sn, lambda r: r.run_mtk_unlock(), "MTK解锁")
+            if self._start_unlock_thread(sn, lambda r: r.run_mtk_unlock(), "MTK解锁"):
+                started += 1
+            else:
+                skipped += 1
+        if skipped > 0:
+            self.add_status_message(f"MTK解锁: {started}台已启动, {skipped}台因设备忙而跳过")
 
     def on_spd_unlock(self):
         if not self._check_devices_selected():
@@ -447,8 +467,14 @@ class Autounlock(QWidget):
                 )
                 return
         self.add_status_message("开始展讯解锁...")
+        started, skipped = 0, 0
         for sn in self.selected_devices:
-            self._start_unlock_thread(sn, lambda r: r.run_spd_unlock(), "展讯解锁")
+            if self._start_unlock_thread(sn, lambda r: r.run_spd_unlock(), "展讯解锁"):
+                started += 1
+            else:
+                skipped += 1
+        if skipped > 0:
+            self.add_status_message(f"展讯解锁: {started}台已启动, {skipped}台因设备忙而跳过")
 
     def on_flash_system(self):
         if not self._check_devices_selected():
@@ -461,8 +487,14 @@ class Autounlock(QWidget):
             show_styled_message(self, "镜像不匹配", "所选镜像文件名不含 system，请选择对应的 system 镜像文件", "warning")
             return
         self.add_status_message("开始刷入 system 镜像...")
+        started, skipped = 0, 0
         for sn in self.selected_devices:
-            self._start_unlock_thread(sn, lambda r: r.run_flash_system(img), "刷入system")
+            if self._start_unlock_thread(sn, lambda r: r.run_flash_system(img), "刷入system"):
+                started += 1
+            else:
+                skipped += 1
+        if skipped > 0:
+            self.add_status_message(f"刷入system: {started}台已启动, {skipped}台因设备忙而跳过")
 
     def on_flash_vendor_boot(self):
         if not self._check_devices_selected():
@@ -475,8 +507,14 @@ class Autounlock(QWidget):
             show_styled_message(self, "镜像不匹配", "所选镜像文件名不含 vendor，请选择对应的 vendor_boot 镜像文件", "warning")
             return
         self.add_status_message("开始刷入 vendor_boot 镜像...")
+        started, skipped = 0, 0
         for sn in self.selected_devices:
-            self._start_unlock_thread(sn, lambda r: r.run_flash_vendor_boot(img), "刷入vendor_boot")
+            if self._start_unlock_thread(sn, lambda r: r.run_flash_vendor_boot(img), "刷入vendor_boot"):
+                started += 1
+            else:
+                skipped += 1
+        if skipped > 0:
+            self.add_status_message(f"刷入vendor_boot: {started}台已启动, {skipped}台因设备忙而跳过")
 
     # ---------- log routing ----------
 
