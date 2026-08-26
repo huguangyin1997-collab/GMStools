@@ -257,11 +257,26 @@ class PackageComparator:
             if mr_value != smr_value:
                 differences.append((display_name, mr_value, smr_value))
         
-        # 比较权限列表
-        perms_diff = self._compare_permissions_for_change(mr_package, smr_package)
-        if perms_diff:
-            differences.append(("请求的权限", perms_diff, None))
-        
+        # 自动扫描所有 list-of-dicts 字段做深层比较（不硬编码字段名）
+        all_keys = set(mr_package.keys()) | set(smr_package.keys())
+        already_checked = {f[1] for f in fields_to_check}
+        for key in sorted(all_keys):
+            if key in already_checked:
+                continue
+            mr_val = mr_package.get(key)
+            smr_val = smr_package.get(key)
+            # 只在两侧都是 list-of-dicts 时做深层比较
+            if isinstance(mr_val, list) or isinstance(smr_val, list):
+                mr_list = mr_val if isinstance(mr_val, list) else []
+                smr_list = smr_val if isinstance(smr_val, list) else []
+                if mr_list or smr_list:
+                    # 检查列表元素是否为 dict
+                    sample = next((x for x in mr_list + smr_list if x is not None), None)
+                    if isinstance(sample, dict):
+                        diff = self._deep_compare_permissions_list(mr_list, smr_list)
+                        if diff:
+                            differences.append((key, diff, None))
+
         if differences:
             return PackageChange(
                 change_type=modelsChangeType.MODIFIED,
@@ -278,30 +293,61 @@ class PackageComparator:
                 new_package=smr_package
             )
     
-    def _compare_permissions_for_change(self, mr_package: Dict, smr_package: Dict) -> Optional[Dict]:
-        """比较权限列表，返回具体变化的权限详情"""
-        mr_perms = mr_package.get("requested_permissions", [])
-        smr_perms = smr_package.get("requested_permissions", [])
-
-        # 获取权限名称列表
-        mr_perm_names = [p.get("name", "未知权限") for p in mr_perms]
-        smr_perm_names = [p.get("name", "未知权限") for p in smr_perms]
-
-        mr_set = set(mr_perm_names)
-        smr_set = set(smr_perm_names)
-
-        if mr_set == smr_set:
+    def _deep_compare_permissions_list(self, mr_perms: List[Dict], smr_perms: List[Dict]) -> Optional[Dict]:
+        """通用权限深层比较：动态收集所有字段名，逐字段比较，不硬编码字段列表"""
+        if not mr_perms and not smr_perms:
             return None
 
-        removed = sorted(mr_set - smr_set)  # MR有但SMR没有的
-        added = sorted(smr_set - mr_set)    # SMR有但MR没有的
+        # 按权限名称建立字典映射
+        mr_map = {p.get("name", ""): p for p in mr_perms}
+        smr_map = {p.get("name", ""): p for p in smr_perms}
 
-        return {
-            "mr_perms": mr_perm_names,
-            "smr_perms": smr_perm_names,
-            "removed": removed,
-            "added": added,
-        }
+        mr_names = set(mr_map.keys())
+        smr_names = set(smr_map.keys())
+
+        added = sorted(smr_names - mr_names)
+        removed = sorted(mr_names - smr_names)
+
+        # 同名权限：动态收集所有字段名，逐字段深层比较
+        field_diffs = []
+        for perm_name in sorted(mr_names & smr_names):
+            mr_perm = mr_map[perm_name]
+            smr_perm = smr_map[perm_name]
+            # 动态收集两个对象的所有字段名
+            all_keys = set(mr_perm.keys()) | set(smr_perm.keys())
+            for key in sorted(all_keys):
+                mr_val = mr_perm.get(key)
+                smr_val = smr_perm.get(key)
+                if mr_val != smr_val:
+                    field_diffs.append((perm_name, key, mr_val, smr_val))
+
+        if added or removed or field_diffs:
+            result = {
+                "added": added,
+                "removed": removed,
+                "field_diffs": field_diffs,
+            }
+            return result
+
+        return None
+
+    def _compare_permissions_for_change(self, mr_package: Dict, smr_package: Dict) -> Optional[Dict]:
+        """比较请求权限列表（使用深层比较）"""
+        mr_perms = mr_package.get("requested_permissions", [])
+        smr_perms = smr_package.get("requested_permissions", [])
+        return self._deep_compare_permissions_list(mr_perms, smr_perms)
+
+    def _compare_defined_permissions_for_change(self, mr_package: Dict, smr_package: Dict) -> Optional[Dict]:
+        """比较定义权限列表（使用深层比较）"""
+        mr_perms = mr_package.get("defined_permissions", [])
+        smr_perms = smr_package.get("defined_permissions", [])
+        return self._deep_compare_permissions_list(mr_perms, smr_perms)
+
+    def _compare_requested_roles_for_change(self, mr_package: Dict, smr_package: Dict) -> Optional[Dict]:
+        """比较请求角色列表（使用深层比较）"""
+        mr_roles = mr_package.get("requested_roles", [])
+        smr_roles = smr_package.get("requested_roles", [])
+        return self._deep_compare_permissions_list(mr_roles, smr_roles)
     
     def _generate_text_report(self, mr_packages: List[Dict], smr_packages: List[Dict],
                             mr_package_dict: Dict, smr_package_dict: Dict,
@@ -394,13 +440,22 @@ class PackageComparator:
                 differences.append(f"  {i:2d}. {diff}")
                 package_diff_count += 1
         
-        # 对比权限列表
-        requested_perms_diff = self._compare_permissions_list("请求的权限", "requested_permissions", 
-                                                            mr_package, smr_package)
-        if requested_perms_diff:
-            differences.append(f"  {len(fields_to_check)+1:2d}. 请求的权限差异:\n{requested_perms_diff}")
-            package_diff_count += 1
-        
+        # 自动扫描所有 list-of-dicts 字段做深层比较（不硬编码字段名）
+        item_idx = len(fields_to_check)
+        all_keys = set(mr_package.keys()) | set(smr_package.keys())
+        already_checked = {f[1] for f in fields_to_check}
+        for key in sorted(all_keys):
+            if key in already_checked:
+                continue
+            mr_val = mr_package.get(key)
+            smr_val = smr_package.get(key)
+            if isinstance(mr_val, list) or isinstance(smr_val, list):
+                list_diff = self._compare_permissions_list(key, key, mr_package, smr_package)
+                if list_diff:
+                    item_idx += 1
+                    differences.append(f"  {item_idx:2d}. {key}差异:\n{list_diff}")
+                    package_diff_count += 1
+
         # 输出所有差异
         if differences:
             result += "\n".join(differences) + "\n"
@@ -431,49 +486,66 @@ class PackageComparator:
         
         return ""
     
-    def _compare_permissions_list(self, list_name: str, list_key: str, 
+    def _compare_permissions_list(self, list_name: str, list_key: str,
                                  mr_package: Dict, smr_package: Dict) -> str:
-        """对比权限列表"""
+        """对比权限列表 - 使用深层比较，动态收集所有字段名逐一比对"""
         mr_perms = mr_package.get(list_key, [])
         smr_perms = smr_package.get(list_key, [])
-        
+
         # 如果没有权限，直接返回
         if not mr_perms and not smr_perms:
             return ""
-        
+
+        # 使用通用深层比较
+        diff = self._deep_compare_permissions_list(mr_perms, smr_perms)
+        if diff is None:
+            return ""
+
         result_lines = []
-        
+
         # 检查权限数量差异
         if len(mr_perms) != len(smr_perms):
             result_lines.append(f"     权限数量: MR={len(mr_perms)}, SMR={len(smr_perms)}")
-        
-        # 创建权限名映射
-        mr_perm_dict = {self._get_permission_name(perm): perm for perm in mr_perms}
-        smr_perm_dict = {self._get_permission_name(perm): perm for perm in smr_perms}
-        
-        all_perm_names = set(mr_perm_dict.keys()) | set(smr_perm_dict.keys())
-        
-        # 检查缺失的权限
-        missing_in_mr = sorted([p for p in all_perm_names if p not in mr_perm_dict])
-        missing_in_smr = sorted([p for p in all_perm_names if p not in smr_perm_dict])
-        
-        if missing_in_mr:
-            result_lines.append(f"     MR缺失权限 ({len(missing_in_mr)}个):")
-            for perm in missing_in_mr[:5]:  # 只显示前5个，避免过长
+
+        # 新增/删除权限
+        added = diff.get("added", [])
+        removed = diff.get("removed", [])
+        field_diffs = diff.get("field_diffs", [])
+
+        if removed:
+            result_lines.append(f"     MR独有权限 ({len(removed)}个):")
+            for perm in removed[:5]:
                 result_lines.append(f"        - {perm}")
-            if len(missing_in_mr) > 5:
-                result_lines.append(f"         ... 还有 {len(missing_in_mr) - 5} 个权限")
-        
-        if missing_in_smr:
-            result_lines.append(f"     SMR缺失权限 ({len(missing_in_smr)}个):")
-            for perm in missing_in_smr[:5]:
-                result_lines.append(f"        - {perm}")
-            if len(missing_in_smr) > 5:
-                result_lines.append(f"         ... 还有 {len(missing_in_smr) - 5} 个权限")
-        
+            if len(removed) > 5:
+                result_lines.append(f"         ... 还有 {len(removed) - 5} 个权限")
+
+        if added:
+            result_lines.append(f"     SMR独有权限 ({len(added)}个):")
+            for perm in added[:5]:
+                result_lines.append(f"        + {perm}")
+            if len(added) > 5:
+                result_lines.append(f"         ... 还有 {len(added) - 5} 个权限")
+
+        # 同名权限内部字段变更
+        if field_diffs:
+            # 按权限名分组
+            by_perm = {}
+            for perm_name, key, mr_val, smr_val in field_diffs:
+                if perm_name not in by_perm:
+                    by_perm[perm_name] = []
+                by_perm[perm_name].append((key, mr_val, smr_val))
+
+            result_lines.append(f"     权限字段变更 ({len(by_perm)}个权限):")
+            for perm_name in sorted(by_perm.keys())[:10]:
+                changes = by_perm[perm_name]
+                for key, mr_val, smr_val in changes:
+                    result_lines.append(f"        {perm_name}.{key}: {mr_val} → {smr_val}")
+            if len(by_perm) > 10:
+                result_lines.append(f"         ... 还有 {len(by_perm) - 10} 个权限有字段变更")
+
         if not result_lines:
             return ""
-        
+
         return "     " + "\n     ".join(result_lines)
     
     def _get_permission_name(self, permission: Dict) -> str:
@@ -1112,7 +1184,7 @@ class PackageComparator:
                 smr_diff_info = {}
                 if change.differences:
                     for field, old_val, new_val in change.differences:
-                        smr_diff_info[field] = new_val if field != "请求的权限" else old_val
+                        smr_diff_info[field] = new_val if not isinstance(old_val, dict) else old_val
                 formatted_smr = self._format_package_for_html(change.new_package, diff_info=smr_diff_info, is_mr_side=False)
                 smr_info = f'''
                     <div class="package-info">
@@ -1125,17 +1197,25 @@ class PackageComparator:
             if change.differences:
                 change_details = '<div class="changes-list">'
                 for field, old_val, new_val in change.differences:
-                    # 特殊处理权限字段 - 显示具体新增/移除的权限名
-                    if field == "请求的权限" and isinstance(old_val, dict):
+                    # 特殊处理权限字段（list-of-dicts）- 显示具体新增/移除/字段变更
+                    if isinstance(old_val, dict):
                         removed_perms = old_val.get("removed", [])
                         added_perms = old_val.get("added", [])
+                        field_diffs = old_val.get("field_diffs", [])
                         perm_parts = []
                         if removed_perms:
                             removed_html = ", ".join(f'<span class="diff-field">{p}</span>' for p in removed_perms)
-                            perm_parts.append(f'<span>MR移除: {removed_html}</span>')
+                            perm_parts.append(f'<span>MR移除权限: {removed_html}</span>')
                         if added_perms:
                             added_html = ", ".join(f'<span class="diff-field">{p}</span>' for p in added_perms)
-                            perm_parts.append(f'<span>SMR新增: {added_html}</span>')
+                            perm_parts.append(f'<span>SMR新增权限: {added_html}</span>')
+                        # 显示字段级变更
+                        if field_diffs:
+                            for fd in field_diffs[:20]:  # 最多显示20条
+                                pname, fkey, mv, sv = fd
+                                perm_parts.append(f'<span>{pname}.<span class="diff-field">{fkey}</span>: <span class="change-old">{mv}</span> <span class="arrow">→</span> <span class="change-new">{sv}</span></span>')
+                            if len(field_diffs) > 20:
+                                perm_parts.append(f'<span>... 还有 {len(field_diffs) - 20} 处字段变更</span>')
                         perm_detail = "<br>".join(perm_parts)
                         change_details += f'''
                             <div class="change-item">
@@ -1275,52 +1355,55 @@ class PackageComparator:
                 else:
                     lines.append(f"<b>{display_name}:</b> {formatted_value}")
 
-        # 权限信息 - 逐个权限标红
-        perms = package.get("requested_permissions", [])
-        if perms:
-            perm_names = [p.get("name", "未知权限") for p in perms]
+        # 自动扫描所有 list-of-dicts 字段，逐个权限标红（不硬编码字段名）
+        scalar_fields = {f[1] for f in fields}
+        for key in sorted(package.keys()):
+            if key in scalar_fields:
+                continue
+            val = package.get(key)
+            if not isinstance(val, list) or not val:
+                continue
+            if not isinstance(val[0], dict):
+                continue
+
+            perm_names = [p.get("name", "未知权限") for p in val]
             perm_count = len(perm_names)
 
-            if "请求的权限" in diff_info:
-                # 权限有差异：逐个渲染，变化的标红
-                perm_diff = diff_info["请求的权限"]
+            if key in diff_info:
+                perm_diff = diff_info[key]
                 if isinstance(perm_diff, dict):
                     removed_set = set(perm_diff.get("removed", []))
                     added_set = set(perm_diff.get("added", []))
+                    field_diff_names = set(fd[0] for fd in perm_diff.get("field_diffs", []))
 
-                    # 逐权限标记：MR侧标红removed，SMR侧标红added
                     highlighted = []
                     for pname in perm_names:
                         if is_mr_side:
-                            is_changed = pname in removed_set
+                            is_changed = pname in removed_set or pname in field_diff_names
                         else:
-                            is_changed = pname in added_set
-
+                            is_changed = pname in added_set or pname in field_diff_names
                         if is_changed:
                             highlighted.append(f"<span class='diff-field'>{pname}</span>")
                         else:
                             highlighted.append(pname)
 
-                    # 显示全部权限（只有变化的权限标红）
                     perm_str = ", ".join(highlighted)
                     perm_display = f"{perm_count}个 ({perm_str})"
-                    lines.append(f"<div class='diff-field-item'><b>请求权限:</b> {perm_display}</div>")
+                    lines.append(f"<div class='diff-field-item'><b>{key}:</b> {perm_display}</div>")
                 else:
-                    # 兼容旧格式：只标红行，不把全部文字变红
                     perm_display = f"{perm_count}个"
                     if perm_count <= 5:
                         perm_display += f" ({', '.join(perm_names)})"
                     else:
                         perm_display += f" ({', '.join(perm_names[:5])}...)"
-                    lines.append(f"<div class='diff-field-item'><b>请求权限:</b> {perm_display}</div>")
+                    lines.append(f"<div class='diff-field-item'><b>{key}:</b> {perm_display}</div>")
             else:
-                # 权限无差异：正常显示（截断过长列表）
                 perm_display = f"{perm_count}个"
                 if perm_count <= 5:
                     perm_display += f" ({', '.join(perm_names)})"
                 else:
                     perm_display += f" ({', '.join(perm_names[:5])}...)"
-                lines.append(f"<b>请求权限:</b> {perm_display}")
+                lines.append(f"<b>{key}:</b> {perm_display}")
 
         return "<br>".join(lines)
     

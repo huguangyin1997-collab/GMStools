@@ -31,7 +31,7 @@ class CustomTitleBar(QWidget):
             }
             QLabel {
                 background-color: transparent;
-                color: #ffffff;
+                color: #000000;
                 font-size: 18px;
                 font-weight: 900;  /* 改为900，更粗 */
                 padding: 0 6px;

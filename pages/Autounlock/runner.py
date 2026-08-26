@@ -107,7 +107,7 @@ class UnlockRunner:
             time.sleep(1)
         return True
 
-    def _run_unlock_with_retry(self, fastboot, cmd, key_name, max_retries=3):
+    def _run_unlock_with_retry(self, fastboot, cmd, key_name, max_retries=3, retry_wait=2):
         """Send unlock command, verify with getvar unlocked, retry if still locked."""
         for attempt in range(1, max_retries + 1):
             if self._cancelled:
@@ -116,12 +116,23 @@ class UnlockRunner:
                 self._log(f"[重试 {attempt}/{max_retries}] 设备仍处于锁定状态，再次尝试解锁...")
                 self._log(f"[提示] 看到设备屏幕提示后请立刻按{key_name}键！")
                 prompt = f"[倒计时 {{seconds}}秒] 准备按{key_name}键..."
-                self._wait_countdown(2, prompt)
+                self._wait_countdown(retry_wait, prompt)
             self._log("[执行] fastboot flashing unlock...")
             rc, out, err = self._run(cmd, timeout=10)
             combined = (out + err).strip()
             if combined:
                 self._log(combined)
+
+            # 展讯设备: 解锁命令输出直接反映解锁状态
+            # unlocking bootloader OKAY → 解锁成功（或已解锁）
+            # cannot be unlocked repeatedly → 设备已经解锁
+            if 'OKAY' in out and 'unlocking bootloader' in out:
+                self._log("解锁命令执行成功 ✓")
+                return True
+            if 'Bootloader can not been unlocked repeatly' in combined:
+                self._log("设备已解锁，无需重复解锁 ✓")
+                return True
+
             time.sleep(2)
             if self._check_device_unlocked(fastboot):
                 return True
@@ -222,7 +233,7 @@ class UnlockRunner:
             self._wait_countdown(3, "[倒计时 {seconds}秒] 请将手指放在音量下键上...")
 
             cmd = [fastboot, '-s', self.device_sn, 'flashing', 'unlock_bootloader', sign_bin]
-            if self._run_unlock_with_retry(fastboot, cmd, "音量下"):
+            if self._run_unlock_with_retry(fastboot, cmd, "音量下", retry_wait=5):
                 self._done(True, "展讯解锁完成")
             else:
                 self._done(False, "展讯解锁失败: 设备仍未解锁，请检查设备状态后重试")
@@ -343,7 +354,14 @@ class UnlockRunner:
             self._log("设备未解锁 ✗ — bootloader 处于锁定状态 (via getvar secure)")
             return False
 
-        self._log("[INFO] 无法通过 getvar unlocked/secure 确定解锁状态，继续执行")
+        # --- 展讯(SPD)平台兼容检测 ---
+        # SPD fastboot 的 unlocked/secure 变量存在但值经常为空，
+        # 且 oem device-info / getvar all 也不可用。
+        # 请肉眼确认手机屏幕显示，解锁成功时 bootloader 界面会显示 info: unlock
+        self._log("[INFO] 展讯设备 fastboot 无法查询解锁状态")
+        self._log("[INFO] ★★★ 请肉眼确认手机屏幕 ★★★")
+        self._log("[INFO] 解锁成功时 bootloader 界面会显示 info: unlock")
+        self._log("[INFO] 确认已解锁则忽略此提示，继续执行")
         return True
 
     def run_flash_system(self, img_path):

@@ -374,6 +374,43 @@ class SMR_Analyzer:
             error_text = f"Package文件对比失败: {str(e)}\n"
             return "FAIL", error_text
     
+
+    def _format_permission_change_details(self, change, result):
+        """格式化权限变更详情（支持请求权限和定义权限）"""
+        for diff in change.differences:
+            if isinstance(diff[1], dict):
+                perm_diff = diff[1]
+                if not isinstance(perm_diff, dict):
+                    continue
+                perm_type = diff[0]
+                added = perm_diff.get("added", [])
+                removed = perm_diff.get("removed", [])
+                field_diffs = perm_diff.get("field_diffs", [])
+
+                result += f"  {perm_type}变更：\n"
+                if added:
+                    result += f"    新增权限 ({len(added)}个):\n"
+                    for perm in added:
+                        result += f"      + {perm}\n"
+                if removed:
+                    result += f"    删除权限 ({len(removed)}个):\n"
+                    for perm in removed:
+                        result += f"      - {perm}\n"
+                if field_diffs:
+                    # 按权限名分组
+                    by_perm = {}
+                    for pname, key, mv, sv in field_diffs:
+                        if pname not in by_perm:
+                            by_perm[pname] = []
+                        by_perm[pname].append((key, mv, sv))
+                    result += f"    权限字段变更 ({len(by_perm)}个权限):\n"
+                    for pname in sorted(by_perm.keys())[:10]:
+                        for key, mv, sv in by_perm[pname]:
+                            result += f"      {pname}.{key}: {mv} -> {sv}\n"
+                    if len(by_perm) > 10:
+                        result += f"      ... 还有 {len(by_perm) - 10} 个权限有字段变更\n"
+        return result
+
     def _generate_detailed_package_summary(self, package_result_obj):
         """生成详细的差异包列表"""
         summary = package_result_obj.summary
@@ -431,13 +468,13 @@ class SMR_Analyzer:
         for change in modified_packages:
             if change.change_type.name == "MODIFIED":
                 old_pkg = change.old_package
-                # 检查是否有权限变更
+                # 检查是否有请求权限或定义权限变更
                 has_permission_change = False
                 for diff in change.differences:
-                    if diff[0] == "请求的权限":
+                    if isinstance(diff[1], dict):
                         has_permission_change = True
                         break
-                
+
                 is_system = old_pkg.get("system_priv", False) if old_pkg else False
                 if has_permission_change and is_system:
                     has_system_permission_change = True
@@ -476,13 +513,13 @@ class SMR_Analyzer:
         # 权限变更的包
         permission_changes = []
         for change in modified_pkgs:
-            # 检查是否有权限变更
+            # 检查是否有请求权限或定义权限变更
             has_permission_change = False
             for diff in change.differences:
-                if diff[0] == "请求的权限":
+                if isinstance(diff[1], dict):
                     has_permission_change = True
                     break
-            
+
             if has_permission_change:
                 permission_changes.append(change)
         
@@ -517,43 +554,8 @@ class SMR_Analyzer:
                 else:
                     result += f"apk版本号: {old_version}\n"
                 
-                # 检查是否有实际的权限变更
-                old_permissions = old_pkg.get("requested_permissions", []) if old_pkg else []
-                new_permissions = new_pkg.get("requested_permissions", []) if new_pkg else []
-                
-                # 比较权限列表
-                old_perm_names = [p.get("name", "未知权限") for p in old_permissions]
-                new_perm_names = [p.get("name", "未知权限") for p in new_permissions]
-                
-                added_permissions = set(new_perm_names) - set(old_perm_names)
-                removed_permissions = set(old_perm_names) - set(new_perm_names)
-                
-                # 检查是否只是顺序不同
-                if old_perm_names != new_perm_names:
-                    result += "权限変更：\n"
-                    if added_permissions:
-                        result += f"  新增权限 ({len(added_permissions)}个):\n"
-                        for perm in sorted(added_permissions):
-                            result += f"    + {perm}\n"
-                    
-                    if removed_permissions:
-                        result += f"  删除权限 ({len(removed_permissions)}个):\n"
-                        for perm in sorted(removed_permissions):
-                            result += f"    - {perm}\n"
-                    
-                    # 如果只是顺序变化
-                    if not added_permissions and not removed_permissions:
-                        result += f"  权限顺序变化 ({len(old_perm_names)}个权限)\n"
-                        # 显示前5个权限的顺序变化
-                        if len(old_perm_names) > 0:
-                            result += f"    旧顺序示例: {', '.join(old_perm_names[:min(5, len(old_perm_names))])}{'...' if len(old_perm_names) > 5 else ''}\n"
-                            result += f"    新顺序示例: {', '.join(new_perm_names[:min(5, len(new_perm_names))])}{'...' if len(new_perm_names) > 5 else ''}\n"
-                else:
-                    # 权限列表完全相同，但被标记为有权限变更
-                    # 可能是权限的其他属性发生了变化（如权限描述、保护级别等）
-                    result += "权限変更：\n"
-                    result += f"  权限列表相同，但其他属性可能发生变化 ({len(old_permissions)}个权限)\n"
-                    result += f"  权限列表: {', '.join(old_perm_names[:min(5, len(old_perm_names))])}{'...' if len(old_perm_names) > 5 else ''}\n"
+                # 使用 diff dict 展示权限变更详情
+                result = self._format_permission_change_details(change, result)
                 
                 # 检查是否有其他关注字段变更
                 special_field_changes = []
@@ -591,43 +593,8 @@ class SMR_Analyzer:
                 else:
                     result += f"apk版本号: {old_version}\n"
                 
-                # 检查是否有实际的权限变更
-                old_permissions = old_pkg.get("requested_permissions", []) if old_pkg else []
-                new_permissions = new_pkg.get("requested_permissions", []) if new_pkg else []
-                
-                # 比较权限列表
-                old_perm_names = [p.get("name", "未知权限") for p in old_permissions]
-                new_perm_names = [p.get("name", "未知权限") for p in new_permissions]
-                
-                added_permissions = set(new_perm_names) - set(old_perm_names)
-                removed_permissions = set(old_perm_names) - set(new_perm_names)
-                
-                # 检查是否只是顺序不同
-                if old_perm_names != new_perm_names:
-                    result += "权限変更：\n"
-                    if added_permissions:
-                        result += f"  新增权限 ({len(added_permissions)}个):\n"
-                        for perm in sorted(added_permissions):
-                            result += f"    + {perm}\n"
-                    
-                    if removed_permissions:
-                        result += f"  删除权限 ({len(removed_permissions)}个):\n"
-                        for perm in sorted(removed_permissions):
-                            result += f"    - {perm}\n"
-                    
-                    # 如果只是顺序变化
-                    if not added_permissions and not removed_permissions:
-                        result += f"  权限顺序变化 ({len(old_perm_names)}个权限)\n"
-                        # 显示前5个权限的顺序变化
-                        if len(old_perm_names) > 0:
-                            result += f"    旧顺序示例: {', '.join(old_perm_names[:min(5, len(old_perm_names))])}{'...' if len(old_perm_names) > 5 else ''}\n"
-                            result += f"    新顺序示例: {', '.join(new_perm_names[:min(5, len(new_perm_names))])}{'...' if len(new_perm_names) > 5 else ''}\n"
-                else:
-                    # 权限列表完全相同，但被标记为有权限变更
-                    # 可能是权限的其他属性发生了变化（如权限描述、保护级别等）
-                    result += "权限変更：\n"
-                    result += f"  权限列表相同，但其他属性可能发生变化 ({len(old_permissions)}个权限)\n"
-                    result += f"  权限列表: {', '.join(old_perm_names[:min(5, len(old_perm_names))])}{'...' if len(old_perm_names) > 5 else ''}\n"
+                # 使用 diff dict 展示权限变更详情
+                result = self._format_permission_change_details(change, result)
                 
                 # 检查是否有其他关注字段变更
                 special_field_changes = []
@@ -650,13 +617,13 @@ class SMR_Analyzer:
         # 没有权限变更的包
         no_permission_changes = []
         for change in modified_pkgs:
-            # 检查是否有权限变更
+            # 检查是否有请求权限或定义权限变更
             has_permission_change = False
             for diff in change.differences:
-                if diff[0] == "请求的权限":
+                if isinstance(diff[1], dict):
                     has_permission_change = True
                     break
-            
+
             if not has_permission_change:
                 no_permission_changes.append(change)
         
