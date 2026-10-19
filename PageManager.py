@@ -16,7 +16,7 @@ class _Placeholder(QWidget):
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         label = QLabel(name)
-        label.setStyleSheet("color: rgba(255,255,255,80); font-size: 20px;")
+        label.setStyleSheet("color: rgba(255,255,255,0.7); font-size: 20px;")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
 

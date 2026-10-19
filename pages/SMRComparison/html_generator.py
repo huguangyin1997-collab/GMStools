@@ -111,7 +111,7 @@ class HTMLReportGenerator:
         }
         
         .timestamp {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.7);
             display: inline-block;
             padding: 8px 20px;
             border-radius: 20px;

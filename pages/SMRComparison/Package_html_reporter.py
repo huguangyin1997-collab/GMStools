@@ -110,7 +110,7 @@ class HTMLReporter:
         }}
         
         .timestamp {{
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.7);
             display: inline-block;
             padding: 8px 20px;
             border-radius: 20px;
@@ -486,12 +486,12 @@ class HTMLReporter:
         }}
         
         .package-added {{
-            background-color: rgba(139, 195, 74, 0.1);
+            background-color: rgba(139, 195, 74, 0.7);
             color: var(--color-added);
         }}
         
         .package-removed {{
-            background-color: rgba(244, 67, 54, 0.1);
+            background-color: rgba(244, 67, 54, 0.7);
             color: var(--color-removed);
         }}
         

@@ -29,6 +29,7 @@ class Modulecomparison(QWidget):
         self.create_file_selection_ui(layout)
         self.create_action_buttons_ui(layout)
         self.create_display_areas_ui(layout)
+        self.create_abi_display_areas_ui(layout)
         self.create_command_areas_ui(layout)
         
         # 连接按钮事件
@@ -72,6 +73,15 @@ class Modulecomparison(QWidget):
         display_layout.addWidget(self.left_display, 1)
         display_layout.addWidget(self.right_display, 1)
         layout.addLayout(display_layout, 3)
+
+    def create_abi_display_areas_ui(self, layout):
+        """创建独有架构模块显示区域UI"""
+        abi_layout = QHBoxLayout()
+        self.left_abi_display = create_display_textedit("旧文件独有架构模块将显示在这里（不计入--include-filter）")
+        self.right_abi_display = create_display_textedit("新文件独有架构模块将显示在这里（不计入--include-filter）")
+        abi_layout.addWidget(self.left_abi_display, 1)
+        abi_layout.addWidget(self.right_abi_display, 1)
+        layout.addLayout(abi_layout, 1)
     
     def create_command_areas_ui(self, layout):
         """创建命令区域UI"""
@@ -146,43 +156,55 @@ class Modulecomparison(QWidget):
     
     def update_displays(self, comparison_result):
         """更新显示区域"""
+        old_abi_only = comparison_result.get('old_abi_only', [])
+        new_abi_only = comparison_result.get('new_abi_only', [])
+        old_abi_text = "\n".join(old_abi_only)
+        new_abi_text = "\n".join(new_abi_only)
         if comparison_result.get('is_xml_comparison', False):
             same_modules = comparison_result.get('same_modules', [])
             same_text = self.comparison_engine.format_same_modules_text(same_modules)
-            
+
             # 更新显示内容
             self.left_display.setText("\n".join(comparison_result['old_raw']))
             self.right_display.setText("\n".join(comparison_result['new_raw']))
+            self.left_abi_display.setText(old_abi_text)
+            self.right_abi_display.setText(new_abi_text)
             self.left_import_display.setText(same_text)
             self.right_import_display.setText(same_text)
-            
+
             # 更新边框颜色状态
             has_old_content = len(comparison_result['old_raw']) > 0
             has_new_content = len(comparison_result['new_raw']) > 0
             has_same_content = len(same_text.strip()) > 0
-            
+
             self.left_display.setStyleSheet(get_text_edit_style(has_old_content))
             self.right_display.setStyleSheet(get_text_edit_style(has_new_content))
+            self.left_abi_display.setStyleSheet(get_text_edit_style(len(old_abi_only) > 0))
+            self.right_abi_display.setStyleSheet(get_text_edit_style(len(new_abi_only) > 0))
             self.left_import_display.setStyleSheet(get_text_edit_style(has_same_content))
             self.right_import_display.setStyleSheet(get_text_edit_style(has_same_content))
         else:
             # 更新显示内容
             self.left_display.setText("\n".join(comparison_result['old_raw']))
             self.right_display.setText("\n".join(comparison_result['new_raw']))
+            self.left_abi_display.setText(old_abi_text)
+            self.right_abi_display.setText(new_abi_text)
             self.left_import_display.setText(comparison_result['old_command'])
             self.right_import_display.setText(comparison_result['new_command'])
-            
+
             # 更新边框颜色状态
             has_old_display = len(comparison_result['old_raw']) > 0
             has_new_display = len(comparison_result['new_raw']) > 0
             has_old_command = comparison_result['old_command'] != "无"
             has_new_command = comparison_result['new_command'] != "无"
-            
+
             self.left_display.setStyleSheet(get_text_edit_style(has_old_display))
             self.right_display.setStyleSheet(get_text_edit_style(has_new_display))
+            self.left_abi_display.setStyleSheet(get_text_edit_style(len(old_abi_only) > 0))
+            self.right_abi_display.setStyleSheet(get_text_edit_style(len(new_abi_only) > 0))
             self.left_import_display.setStyleSheet(get_text_edit_style(has_old_command))
             self.right_import_display.setStyleSheet(get_text_edit_style(has_new_command))
-        
+
         # 更新按钮样式 - 有内容时
         self.update_buttons_style_has_content()
     
@@ -203,12 +225,16 @@ class Modulecomparison(QWidget):
         """清除所有显示区域"""
         self.left_display.clear()
         self.right_display.clear()
+        self.left_abi_display.clear()
+        self.right_abi_display.clear()
         self.left_import_display.clear()
         self.right_import_display.clear()
-        
+
         # 重置所有信息框的边框颜色为默认蓝色
         self.left_display.setStyleSheet(get_text_edit_style(False))
         self.right_display.setStyleSheet(get_text_edit_style(False))
+        self.left_abi_display.setStyleSheet(get_text_edit_style(False))
+        self.right_abi_display.setStyleSheet(get_text_edit_style(False))
         self.left_import_display.setStyleSheet(get_text_edit_style(False))
         self.right_import_display.setStyleSheet(get_text_edit_style(False))
     

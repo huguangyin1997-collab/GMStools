@@ -28,8 +28,8 @@ TEXT_LIGHT = "#7F8C8D"
 # === Backgrounds ===
 CARD_BG = "rgba(255, 255, 255, 0.7)"
 CARD_BG_LIGHTER = "rgba(255, 255, 255, 0.7)"
-BLUE_BG_ALPHA = "rgba(74, 144, 217, 0.15)"
-BLUE_BG_ALPHA_STRONG = "rgba(74, 144, 217, 0.25)"
+BLUE_BG_ALPHA = "rgba(74, 144, 217, 0.7)"
+BLUE_BG_ALPHA_STRONG = "rgba(74, 144, 217, 0.7)"
 TEAL_BG_ALPHA = BLUE_BG_ALPHA  # backwards compat
 TEAL_BG_ALPHA_STRONG = BLUE_BG_ALPHA_STRONG
 

@@ -63,7 +63,7 @@ class CustomComboBox(QPushButton):
                 padding: 5px;
             }
             QMenu::item {
-                background-color: rgba(74, 144, 217, 0.8);
+                background-color: rgba(74, 144, 217, 0.7);
                 color: white;
                 padding: 8px 12px;
                 border-radius: 3px;
@@ -71,15 +71,15 @@ class CustomComboBox(QPushButton):
                 margin: 2px;
             }
             QMenu::item:hover {
-                background-color: rgba(74, 144, 217, 0.9);
+                background-color: rgba(74, 144, 217, 0.7);
                 color: black;
             }
             QMenu::item:pressed {
-                background-color: rgba(46, 106, 168, 0.9);
+                background-color: rgba(46, 106, 168, 0.7);
                 color: black;
             }
             QMenu::item:selected {
-                background-color: rgba(39, 174, 96, 0.9);
+                background-color: rgba(39, 174, 96, 0.7);
                 color: white;
                 font-weight: bold;
             }

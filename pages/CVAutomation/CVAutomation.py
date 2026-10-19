@@ -34,7 +34,7 @@ class CVAutomation(QWidget):
         self.device_btn.setFixedHeight(36)
         self.device_btn.setStyleSheet("""
             QPushButton {
-                background-color: rgba(255, 255, 255, 180);
+                background-color: rgba(255, 255, 255, 0.7);
                 border: 1px solid rgba(0, 0, 0, 80);
                 padding: 5px 12px;
                 color: #333;
@@ -46,7 +46,7 @@ class CVAutomation(QWidget):
                 background-color: #3A7BC0;
             }
             QPushButton:pressed {
-                background-color: rgba(240, 240, 240, 200);
+                background-color: rgba(240, 240, 240, 0.7);
             }
         """)
         self.device_btn.clicked.connect(self.show_device_list)
@@ -125,7 +125,7 @@ class CVAutomation(QWidget):
     def get_path_style(self) -> str:
         return """
             QLineEdit {
-                background-color: rgba(255, 255, 255, 180);
+                background-color: rgba(255, 255, 255, 0.7);
                 border: 1px solid rgba(0, 0, 0, 80);
                 padding: 5px 12px;
                 color: #333;
@@ -137,7 +137,7 @@ class CVAutomation(QWidget):
     def get_output_style(self) -> str:
         return """
             QTextEdit {
-                background-color: rgba(255, 255, 255, 180);
+                background-color: rgba(255, 255, 255, 0.7);
                 border: 1px solid rgba(0, 0, 0, 80);
                 padding: 8px;
                 color: #333;
@@ -185,7 +185,7 @@ class CVAutomation(QWidget):
             def paintEvent(self, event):
                 painter = QPainter(self)
                 # 绘制半透白背景 (alpha=180)
-                painter.setBrush(QBrush(QColor(255, 255, 255, 180)))
+                painter.setBrush(QBrush(QColor(255, 255, 255, 178)))
                 painter.setPen(QPen(QColor(0, 0, 0, 80), 1))
                 painter.drawRect(self.rect())
 
@@ -214,10 +214,10 @@ class CVAutomation(QWidget):
                 color: #333;
             }
             QListWidget::item:selected {
-                background-color: rgba(224, 224, 224, 200);
+                background-color: rgba(224, 224, 224, 0.7);
             }
             QListWidget::item:hover {
-                background-color: rgba(224, 224, 224, 150);
+                background-color: rgba(224, 224, 224, 0.7);
             }
         """)
 

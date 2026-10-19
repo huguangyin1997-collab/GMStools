@@ -42,10 +42,10 @@ class DeviceListPopup(QWidget):
                 color: #333;
             }
             QListWidget::item:selected {
-                background-color: rgba(224, 224, 224, 200);
+                background-color: rgba(224, 224, 224, 0.7);
             }
             QListWidget::item:hover {
-                background-color: rgba(224, 224, 224, 150);
+                background-color: rgba(224, 224, 224, 0.7);
             }
         """)
 
@@ -84,7 +84,7 @@ class DeviceListPopup(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setBrush(QBrush(QColor(255, 255, 255, 180)))
+        painter.setBrush(QBrush(QColor(255, 255, 255, 178)))
         painter.setPen(QPen(QColor(0, 0, 0, 80), 1))
         painter.drawRect(self.rect())
 
@@ -110,7 +110,7 @@ def build_device_panels(container_layout, selected_devices, device_logs, device_
         text_edit.setPlaceholderText(f"{device_sn} 的日志输出...")
         text_edit.setStyleSheet("""
             QTextEdit {
-                background-color: rgba(255, 255, 255, 180);
+                background-color: rgba(255, 255, 255, 0.7);
                 border: 1px solid #4A90D9;
                 color: #333;
                 font-size: 12px;

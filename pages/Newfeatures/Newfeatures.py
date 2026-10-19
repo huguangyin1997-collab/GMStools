@@ -58,7 +58,7 @@ class Newfeatures(QWidget):
                 padding: 15px;
             }
             QFrame:hover {
-                background-color: rgba(57, 197, 187, 0.08);
+                background-color: rgba(57, 197, 187, 0.7);
                 border-color: #4A90D9;
             }
         """)

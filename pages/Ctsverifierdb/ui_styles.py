@@ -212,7 +212,7 @@ class UIStyles:
         """获取导入状态文本框样式"""
         return """
             QTextEdit {
-                background-color: rgba(46, 204, 113, 0.8);
+                background-color: rgba(46, 204, 113, 0.7);
                 border: 2px solid #2ecc71;
                 border-radius: 8px;
                 padding: 12px;
@@ -226,7 +226,7 @@ class UIStyles:
         """获取导出状态文本框样式"""
         return """
             QTextEdit {
-                background-color: rgba(241, 196, 15, 0.8);
+                background-color: rgba(241, 196, 15, 0.7);
                 border: 2px solid #f1c40f;
                 border-radius: 8px;
                 padding: 12px;
@@ -241,7 +241,7 @@ class UIStyles:
         """获取框架样式"""
         return """
             QFrame {
-                background-color: rgba(57, 197, 187, 0.2);
+                background-color: rgba(57, 197, 187, 0.7);
                 border: 2px solid #4A90D9;
                 border-radius: 8px;
             }
@@ -251,7 +251,7 @@ class UIStyles:
         """获取导入状态框架样式"""
         return """
             QFrame {
-                background-color: rgba(46, 204, 113, 0.3);
+                background-color: rgba(46, 204, 113, 0.7);
                 border: 2px solid #2ecc71;
                 border-radius: 8px;
             }
@@ -261,7 +261,7 @@ class UIStyles:
         """获取导出状态框架样式"""
         return """
             QFrame {
-                background-color: rgba(241, 196, 15, 0.3);
+                background-color: rgba(241, 196, 15, 0.7);
                 border: 2px solid #f1c40f;
                 border-radius: 8px;
             }

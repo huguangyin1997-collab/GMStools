@@ -74,7 +74,7 @@ class Autounlock(QWidget):
         self.file_path_edit.setPlaceholderText("未选择文件...")
         self.file_path_edit.setStyleSheet("""
             QLineEdit {
-                background-color: rgba(255, 255, 255, 180);
+                background-color: rgba(255, 255, 255, 0.7);
                 border: 1px solid #4A90D9;
                 padding: 5px 12px;
                 color: #333;
@@ -82,7 +82,7 @@ class Autounlock(QWidget):
                 border-radius: 0px;
             }
             QLineEdit:hover {
-                background-color: rgba(255, 255, 255, 180);
+                background-color: rgba(255, 255, 255, 0.7);
             }
         """)
         file_layout.addWidget(self.file_path_edit)
@@ -226,7 +226,7 @@ class Autounlock(QWidget):
 
         style = f"""
             QPushButton {{
-                background-color: rgba(255, 255, 255, 180);
+                background-color: rgba(255, 255, 255, 0.7);
                 border: 1px solid {border_color};
                 padding: 5px 12px;
                 color: #333;
@@ -238,7 +238,7 @@ class Autounlock(QWidget):
                 background-color: #3A7BC0;
             }}
             QPushButton:pressed {{
-                background-color: rgba(240, 240, 240, 200);
+                background-color: rgba(240, 240, 240, 0.7);
             }}
         """
         self.device_btn.setText(text)
@@ -272,7 +272,7 @@ class Autounlock(QWidget):
             intro_edit.setPlainText(intro_text)
             intro_edit.setStyleSheet("""
                 QTextEdit {
-                    background-color: rgba(255, 255, 255, 180);
+                    background-color: rgba(255, 255, 255, 0.7);
                     border: 1px solid #4A90D9;
                     color: #333;
                     font-size: 14px;
