@@ -11,7 +11,7 @@ from ..Ctsverifierdb.device_manager import DeviceManager
 from .utils import _get_fastboot_path, _get_unlock_dir, _run_command, get_app_dir
 from .runner import UnlockSignals, UnlockRunner
 from .dialogs import show_styled_message
-from .device_panel import DeviceListPopup, build_device_panels, get_fastboot_devices
+from .device_panel import DeviceListPopup, build_device_panels, get_fastboot_devices, get_adb_devices
 
 
 class Autounlock(QWidget):
@@ -192,27 +192,45 @@ class Autounlock(QWidget):
         self.refresh_btn.setStyleSheet(self.refresh_btn_original_style)
 
     def _reboot_single_device(self, sn, fastboot, adb_path):
-        """Reboot a single device. Try fastboot reboot first (device likely in
-        fastboot/fastbootd mode after flashing), fall back to adb reboot."""
-        # Priority: fastboot reboot (device is usually in fastboot after our ops)
-        self.add_status_message(f"{sn}: 尝试 fastboot reboot...")
-        self._log_to_device(sn, "执行 fastboot reboot")
-        rc, out, err = _run_command([fastboot, '-s', sn, 'reboot'], timeout=30)
-        if rc == 0 or 'okay' in (out + err).lower():
-            self.add_status_message(f"{sn}: fastboot 重启命令已发送")
-            self._log_to_device(sn, "fastboot 重启命令已发送")
+        """Reboot a single device using the command matching its current mode.
+
+        Mode is determined by the state column:
+          adb devices      -> "<serial>  device"
+          fastboot devices -> "<serial>  fastboot"
+        The serial must match exactly — a different fastboot serial is a
+        different device and is never used.
+        """
+        adb_states = get_adb_devices(adb_path)
+        fb_devices = get_fastboot_devices()
+
+        if adb_states.get(sn) == 'device':
+            self.add_status_message(f"{sn}: 设备在 ADB 模式 (device)，执行 adb reboot...")
+            self._log_to_device(sn, "检测到 ADB 模式 (device)，执行 adb reboot")
+            rc, out, err = _run_command([adb_path, '-s', sn, 'reboot'], timeout=30)
+            if rc != 0 and err:
+                self.add_status_message(f"{sn}: adb 重启失败 - {err.strip()}")
+                self._log_to_device(sn, f"adb 重启失败: {err.strip()}")
+            else:
+                self.add_status_message(f"{sn}: adb 重启命令已发送")
+                self._log_to_device(sn, "adb 重启命令已发送")
             return
 
-        # fastboot failed, try adb reboot
-        self.add_status_message(f"{sn}: fastboot 未响应，尝试 adb reboot...")
-        self._log_to_device(sn, "fastboot 未响应，尝试 adb reboot")
-        rc, out, err = _run_command([adb_path, '-s', sn, 'reboot'], timeout=30)
-        if rc != 0 and err:
-            self.add_status_message(f"{sn}: 重启失败 - {err.strip()}")
-            self._log_to_device(sn, f"重启失败: {err.strip()}")
-        else:
-            self.add_status_message(f"{sn}: adb 重启命令已发送")
-            self._log_to_device(sn, "adb 重启命令已发送")
+        if sn in fb_devices:
+            self.add_status_message(f"{sn}: 设备在 fastboot 模式 (fastboot)，执行 fastboot reboot...")
+            self._log_to_device(sn, "检测到 fastboot 模式 (fastboot)，执行 fastboot reboot")
+            rc, out, err = _run_command([fastboot, '-s', sn, 'reboot'], timeout=30)
+            if rc == 0 or 'okay' in (out + err).lower():
+                self.add_status_message(f"{sn}: fastboot 重启命令已发送")
+                self._log_to_device(sn, "fastboot 重启命令已发送")
+            else:
+                self.add_status_message(f"{sn}: fastboot 重启失败 - {(err or out).strip()}")
+                self._log_to_device(sn, f"fastboot 重启失败: {(err or out).strip()}")
+            return
+
+        state = adb_states.get(sn)
+        msg = f"未检测到可用设备 (ADB 状态: {state or '无'} / fastboot: 无)"
+        self.add_status_message(f"{sn}: {msg}")
+        self._log_to_device(sn, msg)
 
     def update_device_button_text(self):
         count = len(self.selected_devices)

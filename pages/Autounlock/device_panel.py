@@ -139,6 +139,24 @@ def build_device_panels(container_layout, selected_devices, device_logs, device_
     return device_logs
 
 
+def get_adb_devices(adb_path):
+    """Get devices currently in ADB mode as {serial: state} (`device`, `recovery`, ...)."""
+    if not adb_path:
+        return {}
+    try:
+        rc, out, err = _run_command([adb_path, 'devices'], timeout=10)
+        if rc != 0:
+            return {}
+        devices = {}
+        for line in out.strip().split('\n'):
+            parts = line.split()
+            if len(parts) >= 2 and parts[1] != 'offline':
+                devices[parts[0]] = parts[1]
+        return devices
+    except Exception:
+        return {}
+
+
 def get_fastboot_devices():
     """Get devices currently in fastboot mode."""
     fastboot = _get_fastboot_path()
