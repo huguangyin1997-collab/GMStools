@@ -135,14 +135,28 @@ class UnlockRunner:
             return 'fastboot', self.device_sn
         return None, None
 
-    def _wait_countdown(self, seconds, prompt_template):
-        """Countdown before unlock, giving the user time to prepare the volume key."""
-        for i in range(seconds, 0, -1):
-            if self._cancelled:
-                return False
-            self._log(prompt_template.format(seconds=i))
-            time.sleep(1)
-        return True
+    def _check_unlocked_via_adb(self):
+        """Check the bootloader lock state via adb before rebooting.
+
+        `getprop ro.boot.flash.locked` returns 0 when unlocked, 1 when locked.
+        Returns True (unlocked), False (locked) or None (cannot determine).
+        """
+        if not self.adb_path:
+            return None
+        rc, out, err = self._run(
+            [self.adb_path, '-s', self.device_sn, 'shell', 'getprop',
+             'ro.boot.flash.locked'],
+            timeout=10,
+        )
+        value = (out + err).strip()
+        if rc == 0 and value == '0':
+            self._log("ADB 检查: ro.boot.flash.locked=0，设备已解锁 ✓")
+            return True
+        if rc == 0 and value == '1':
+            self._log("ADB 检查: ro.boot.flash.locked=1，设备处于锁定状态")
+            return False
+        self._log(f"[WARNING] 无法通过 ADB 确认解锁状态 (返回: {value!r})，继续执行")
+        return None
 
     @staticmethod
     def _unlock_success_from_output(combined):
@@ -158,76 +172,97 @@ class UnlockRunner:
             return True
         return False
 
-    def _run_unlock_with_retry(self, fastboot, cmd, key_name, platform,
-                               max_retries=3, retry_wait=2, cmd_timeout=60):
-        """Send the unlock command and verify the bootloader state.
+    def _run_unlock_once(self, cmd, cmd_timeout=60):
+        """Send the unlock command exactly once.
 
-        Returns True (unlocked), False (failed) or None (cannot determine).
-        The command can block for several seconds waiting for the volume-key
-        confirmation, and MTK devices reboot right after unlocking. A timeout
-        or USB protocol error is therefore not a failure: the state is
-        confirmed via getvar, and the unlock command is NEVER resent while
-        the flow may still be running (that would fire duplicate unlock
-        commands at the device).
+        This only sends the command and logs its output — for both MTK and
+        展讯 the result is judged afterwards by `_verify_unlocked_via_erase`
+        (erase userdata).
+
+        The command is NEVER retried or resent: it can block while waiting for
+        the volume-key confirmation, and a second `flashing unlock` while that
+        flow is still pending interrupts the bootloader and can leave the
+        device in an undefined state.
         """
-        for attempt in range(1, max_retries + 1):
-            if self._cancelled:
-                return False
-            if attempt > 1:
-                self._log(f"[重试 {attempt}/{max_retries}] 设备仍处于锁定状态，再次尝试解锁...")
-                self._log(f"[提示] 看到设备屏幕提示后请立刻按{key_name}键！")
-                prompt = f"[倒计时 {{seconds}}秒] 准备按{key_name}键..."
-                self._wait_countdown(retry_wait, prompt)
-            self._log(f"[执行] fastboot {' '.join(cmd[3:])}...")
-            # Give the user time to press the volume key and the bootloader
-            # time to finish the auth flow (~10s on MTK).
-            rc, out, err = self._run(cmd, timeout=cmd_timeout)
-            combined = (out + err).strip()
-            if combined:
-                self._log(combined)
+        if self._cancelled:
+            return False
 
-            if 'Bootloader can not been unlocked repeatly' in combined:
-                self._log("设备已解锁，无需重复解锁 ✓")
-                return True
-            if self._unlock_success_from_output(combined):
-                self._log("解锁命令执行成功 ✓")
-                return True
-            if re.search(r'unrecognized command|unknown command|not supported',
-                         combined, re.IGNORECASE):
-                self._log("[ERROR] bootloader 不支持该解锁命令，"
-                          "请确认设备已进入 bootloader 界面，或该机型需要厂商解锁工具", is_error=True)
-                return False
+        self._log(f"[执行] fastboot {' '.join(cmd[3:])}...")
+        # Give the user time to press the volume key and the bootloader
+        # time to finish the auth flow (~10s on MTK).
+        rc, out, err = self._run(cmd, timeout=cmd_timeout)
+        combined = (out + err).strip()
+        if combined:
+            self._log(combined)
+        lowered = combined.lower()
 
-            # Signs that the bootloader is still running the unlock flow or
-            # that the device is rebooting (USB drops). Never resend here —
-            # the unlock may already have been accepted.
-            flow_maybe_running = bool(
-                re.search(r'start unlock flow', combined, re.IGNORECASE)
-                or re.search(r'status read failed|protocol error|waiting for',
-                             combined, re.IGNORECASE)
-                or rc == -1
-            )
-            if rc == -1:
-                self._log("[提示] 等待设备确认超时（用户可能尚未按键或设备正在重启），先确认解锁状态，不重复发送解锁命令")
-
-            state = self._wait_unlock_state(fastboot, platform, timeout=25)
-            if state is True:
-                return True
-            if state is False:
-                # Only an explicit "locked" state is safe to retry.
-                if flow_maybe_running:
-                    self._log("[WARNING] 读取到锁定状态，但解锁命令可能仍在执行，为避免重复下发将不再重试")
-                    return False
-                if attempt == max_retries:
-                    return False
-                continue
-
-            # Cannot determine the state. Do not resend the unlock command.
-            self._log("[WARNING] 无法读取解锁状态，但解锁命令已发出。"
-                      "为避免对设备重复下发解锁命令，将不再重试。")
-            self._log("[WARNING] 请查看设备屏幕确认；若设备正在重启，说明解锁流程已被接受。")
+        if 'Bootloader can not been unlocked repeatly' in combined:
+            self._log("[INFO] bootloader 返回“不可重复解锁”标志，"
+                      "最终以 erase userdata 验证为准")
+            return True
+        if self._unlock_success_from_output(combined):
+            self._log("[INFO] 解锁命令返回成功标志，等待 erase userdata 验证...")
+            return True
+        if re.search(r'unrecognized command|unknown command|not supported', lowered):
+            self._log("[ERROR] bootloader 不支持该解锁命令，"
+                      "请确认设备已进入 bootloader 界面，或该机型需要厂商解锁工具", is_error=True)
+            return False
+        if re.search(r'\bfailed\b|\bfail\b', lowered):
+            self._log("[ERROR] 解锁命令执行失败（仅下发一次，不再重试）", is_error=True)
+            return False
+        if rc == -1:
+            self._log("[提示] 等待设备确认超时（用户可能尚未按键或设备正在重启）；"
+                      "解锁命令仅下发一次，不再重发，请查看设备屏幕确认")
             return None
-        return False
+
+        # A bare OKAY is NOT proof of success — only the explicit unlock-auth
+        # output counts. Without it the outcome stays unconfirmed.
+        self._log("[WARNING] 输出中未出现解锁成功标志（如 (bootloader) Unlock auth ok!）；"
+                  "本次仅下发一次，不再重发，请查看设备屏幕确认")
+        return None
+
+    def _verify_unlocked_via_erase(self, fastboot, wait_timeout=60):
+        """Judge the unlock result solely by `fastboot erase userdata`.
+
+        A bootloader that is still locked rejects the erase:
+        - SPD: `Flashing Lock Flag is locked. Please unlock it first!`
+        - MTK: `No support by lock control`
+        Once the unlock has taken effect the erase succeeds (OKAY).
+
+        Returns True (unlocked), False (locked) or None (cannot determine).
+        Waits for the device to (re)appear in fastboot first, since some
+        devices reboot right after the unlock command.
+        """
+        if self._cancelled:
+            return None
+        start = time.time()
+        while self.device_sn not in self._get_fastboot_serials(fastboot):
+            if self._cancelled:
+                return None
+            if time.time() - start >= wait_timeout:
+                self._log("[WARNING] 设备未回到 fastboot 模式，"
+                          "无法用 erase userdata 验证解锁状态")
+                return None
+            time.sleep(0.5)
+
+        rc, out, err = self._run(
+            [fastboot, '-s', self.device_sn, 'erase', 'userdata'],
+            timeout=60,
+        )
+        combined = (out + err).strip()
+        lowered = combined.lower()
+        if re.search(r'flashing lock flag is locked|unlock it first'
+                     r'|in\s+lock(?:ed)?\s+state|no support by lock control',
+                     lowered):
+            self._log("验证: erase userdata 被拒绝 — bootloader 仍处于锁定状态 ✗",
+                      is_error=True)
+            return False
+        if re.search(r"erasing\s+'?userdata'?[^\n]*\bokay\b", lowered):
+            self._log("验证: erase userdata 成功 — 设备已解锁 ✓")
+            return True
+        if combined:
+            self._log(f"[DEBUG] erase userdata 返回: {combined}")
+        return None
 
     def run_mtk_unlock(self):
         """MTK unlock: adb reboot bootloader -> fastboot flashing unlock"""
@@ -242,6 +277,9 @@ class UnlockRunner:
             self._log("步骤 1/3: 判断设备模式并重启到 bootloader...")
             mode, serial = self._detect_mode(fastboot)
             if mode == 'adb':
+                if self._check_unlocked_via_adb() is True:
+                    self._done(True, "设备已解锁，无需重复解锁")
+                    return
                 self._log("设备处于 ADB 模式 (device)，执行 adb reboot bootloader...")
                 rc, out, err = self._run(
                     [self.adb_path, '-s', self.device_sn, 'reboot', 'bootloader']
@@ -286,14 +324,15 @@ class UnlockRunner:
                 self._done(True, "设备已解锁，无需重复解锁")
                 return
             self._log("[重要] 设备屏幕将出现解锁确认提示，见到提示请立刻按音量上键！")
-            self._wait_countdown(3, "[倒计时 {seconds}秒] 请将手指放在音量上键上...")
 
             cmd = [fastboot, '-s', self.device_sn, 'flashing', 'unlock']
-            result = self._run_unlock_with_retry(fastboot, cmd, "音量上", 'mtk', cmd_timeout=40)
+            self._run_unlock_once(cmd, cmd_timeout=40)
+            # 解锁是否成功，完全以 erase userdata 的结果为准
+            result = self._verify_unlocked_via_erase(fastboot)
             if result is True:
                 self._done(True, "MTK 解锁完成")
             elif result is None:
-                self._done(False, "MTK 解锁结果无法确认: 解锁命令已执行，"
+                self._done(False, "MTK 解锁结果无法确认: 解锁命令已执行（仅一次），"
                                   "设备可能正在重启，请查看设备屏幕/重启后确认")
             else:
                 self._done(False, "MTK 解锁失败: 设备仍未解锁，请检查设备状态后重试")
@@ -330,6 +369,9 @@ class UnlockRunner:
             if self._check_fastboot_device(fastboot):
                 self._log("设备已在 fastboot 模式，跳过 adb reboot")
             else:
+                if self._check_unlocked_via_adb() is True:
+                    self._done(True, "设备已解锁，无需重复解锁")
+                    return
                 rc, out, err = self._run([self.adb_path, '-s', self.device_sn, 'reboot', 'bootloader'])
                 if rc != 0 and err:
                     self._log(f"[WARNING] adb reboot bootloader: {err.strip()}")
@@ -337,6 +379,12 @@ class UnlockRunner:
             self._log("步骤 2/5: 等待 fastboot 设备就绪...")
             if not self._wait_fastboot_device(120):
                 self._done(False, "等待 fastboot 设备超时")
+                return
+
+            # 进入 bootloader 后再确认一次：已解锁则不再下发解锁命令
+            if self._check_device_unlocked(
+                    fastboot, 'spd', unknown_is_unlocked=False) is True:
+                self._done(True, "设备已解锁，无需重复解锁")
                 return
 
             self._log("步骤 3/5: 获取 identifier token...")
@@ -357,14 +405,15 @@ class UnlockRunner:
 
             self._log("步骤 5/5: 执行解锁并验证...")
             self._log("[重要] 设备屏幕将出现解锁确认提示，见到提示请立刻按音量下键！")
-            self._wait_countdown(3, "[倒计时 {seconds}秒] 请将手指放在音量下键上...")
 
             cmd = [fastboot, '-s', self.device_sn, 'flashing', 'unlock_bootloader', sign_bin]
-            result = self._run_unlock_with_retry(fastboot, cmd, "音量下", 'spd', retry_wait=5)
+            self._run_unlock_once(cmd)
+            # 解锁是否成功，完全以 erase userdata 的结果为准
+            result = self._verify_unlocked_via_erase(fastboot)
             if result is True:
                 self._done(True, "展讯解锁完成")
             elif result is None:
-                self._done(False, "展讯解锁结果无法确认: 解锁命令已执行，"
+                self._done(False, "展讯解锁结果无法确认: 解锁命令已执行（仅一次），"
                                   "设备可能正在重启，请查看设备屏幕/重启后确认")
             else:
                 self._done(False, "展讯解锁失败: 设备仍未解锁，请检查设备状态后重试")
@@ -453,34 +502,8 @@ class UnlockRunner:
                 return True
         return False
 
-    def _wait_unlock_state(self, fastboot, platform, timeout=25):
-        """Poll getvar until the unlock state is known or timeout.
-
-        Returns True (unlocked), False (explicitly locked) or None (unknown).
-        After an MTK unlock the device reboots into fastbootd, so USB can be
-        unavailable for a while before getvar works again.
-        """
-        self._log("等待设备重新连接并确认解锁状态...")
-        deadline = time.time() + timeout
-        state = None
-        while not self._cancelled and time.time() < deadline:
-            # Only query when the device is visible; `getvar` on a rebooting
-            # device blocks until its own timeout.
-            if self.device_sn in self._get_fastboot_serials(fastboot):
-                state = self._check_device_unlocked(fastboot, platform, quiet=True)
-                if state is True:
-                    self._log("设备已解锁 ✓")
-                    return True
-                if state is False:
-                    self._log("设备未解锁 ✗ — bootloader 处于锁定状态")
-                    return False
-            for _ in range(20):
-                if self._cancelled:
-                    return None
-                time.sleep(0.1)
-        return state
-
-    def _check_device_unlocked(self, fastboot, platform=None, quiet=False):
+    def _check_device_unlocked(self, fastboot, platform=None, quiet=False,
+                               unknown_is_unlocked=True):
         """Check bootloader unlock state.
 
         Returns True (unlocked), False (locked) or None (cannot determine).
@@ -548,11 +571,15 @@ class UnlockRunner:
         # 且 oem device-info / getvar all 也不可用。
         # 请肉眼确认手机屏幕显示，解锁成功时 bootloader 界面会显示 info: unlock
         if platform == 'spd':
-            log("[INFO] 展讯设备 fastboot 无法查询解锁状态")
-            log("[INFO] ★★★ 请肉眼确认手机屏幕 ★★★")
-            log("[INFO] 解锁成功时 bootloader 界面会显示 info: unlock")
-            log("[INFO] 确认已解锁则忽略此提示，继续执行")
-            return True
+            if unknown_is_unlocked:
+                log("[INFO] 展讯设备 fastboot 无法查询解锁状态")
+                log("[INFO] ★★★ 请肉眼确认手机屏幕 ★★★")
+                log("[INFO] 解锁成功时 bootloader 界面会显示 info: unlock")
+                log("[INFO] 确认已解锁则忽略此提示，继续执行")
+                return True
+            # Pre-check before unlocking: never assume unlocked when unknown.
+            log("[INFO] 展讯设备 fastboot 无法查询解锁状态，继续执行解锁")
+            return None
         return None
 
     def run_flash_system(self, img_path):
